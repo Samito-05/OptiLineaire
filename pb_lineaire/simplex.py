@@ -188,7 +188,7 @@ def _compute_pivot_steps(tableau, basis, var_names, m, n, entering_col, leaving_
         if abs(factor) == 1:
             formula = f"On annule {entering_label} dans {row_label} en faisant : {row_label} ← {row_label} {sign} {pivot_row_label}."
         else:
-            formula = f"On annule {entering_label} dans {row_label} en faisant : {row_label} ← {row_label} {sign} {f_str} · {pivot_row_label}."
+            formula = f"On annule {entering_label} dans {row_label} en faisant : {row_label} ← {row_label} {sign} {f_str} × {pivot_row_label}."
         new_row = [
             tableau[i][j] - factor * new_pivot_row[j]
             for j in range(num_vars + 1)
