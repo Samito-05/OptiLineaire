@@ -20,12 +20,12 @@
     </p>
     <p class="mb-1 mt-2"><strong>Sous contraintes :</strong></p>
     <ul class="mb-0">
-      {% for row, bi in constraints %}
+      {% for row, op, bi in constraints %}
       <li>
         {% for aij in row %}
           {{ aij }} · {{ forloop.counter|math_index:"x" }}{% if not forloop.last %} + {% endif %}
         {% endfor %}
-        &nbsp;&le;&nbsp; {{ bi }}
+        &nbsp;{{ op }}&nbsp; {{ bi }}
       </li>
       {% endfor %}
     </ul>

@@ -101,26 +101,30 @@ function buildForm() {
     objDiv.appendChild(wrapper);
   }
 
-  // --- En-tête des contraintes ---
-  const thead = document.getElementById('constraints_head');
-   let thRow = '<tr><th>Contrainte</th>';
-   for (let j = 0; j < n; j++) thRow += `<th>\\(x_{${j+1}}\\)</th>`;
-   thRow += '<th>≤</th><th>b</th></tr>';
-  thead.innerHTML = thRow;
+   // --- En-tête des contraintes ---
+   const thead = document.getElementById('constraints_head');
+    let thRow = '<tr><th>Contrainte</th>';
+    for (let j = 0; j < n; j++) thRow += `<th>\\(x_{${j+1}}\\)</th>`;
+    thRow += '<th>Opérateur</th><th>b</th></tr>';
+   thead.innerHTML = thRow;
 
-  // --- Corps des contraintes ---
-  const tbody = document.getElementById('constraints_body');
-  tbody.innerHTML = '';
-  for (let i = 0; i < m; i++) {
-    let row = `<tr><td class="fw-bold text-muted">C${i+1}</td>`;
-    for (let j = 0; j < n; j++) {
-      row += `<td><input type="number" step="any" name="a_${i}_${j}" class="form-control form-control-sm" style="width:75px" placeholder="0" value="0"></td>`;
+   // --- Corps des contraintes ---
+   const tbody = document.getElementById('constraints_body');
+   tbody.innerHTML = '';
+   for (let i = 0; i < m; i++) {
+     let row = `<tr><td class="fw-bold text-muted">C${i+1}</td>`;
+     for (let j = 0; j < n; j++) {
+       row += `<td><input type="number" step="any" name="a_${i}_${j}" class="form-control form-control-sm text-center input-width-constraint-coef" placeholder="0" value="0"></td>`;
+     }
+     row += `<td><select name="op_${i}" class="form-select form-select-sm" style="width:100%;text-align:center">
+       <option value="le">≤</option>
+       <option value="ge">≥</option>
+       <option value="eq">=</option>
+     </select></td>`;
+     row += `<td><input type="number" step="any" name="b_${i}" class="form-control form-control-sm text-center input-width-constraint-b" placeholder="0" value="0"></td>`;
+      row += '</tr>';
+      tbody.innerHTML += row;
     }
-    row += `<td class="text-muted">≤</td>`;
-    row += `<td><input type="number" step="any" name="b_${i}" class="form-control form-control-sm" style="width:80px" placeholder="0" value="0"></td>`;
-     row += '</tr>';
-     tbody.innerHTML += row;
-   }
 
    // Demander à MathJax de retraiter le DOM pour les nouvelles équations
    if (typeof MathJax !== 'undefined') {

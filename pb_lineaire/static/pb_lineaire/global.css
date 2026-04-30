@@ -280,3 +280,14 @@ body {
 .btn:not(.collapsed) .collapse-icon {
   transform: rotate(180deg);
 }
+
+/* Styles pour les sélecteurs déroulants */
+select.form-select-sm {
+  padding: 0.32rem 0.65rem;
+  font-size: 0.875rem;
+  border-radius: 12px;
+}
+
+.form-select-sm option {
+  padding: 0.4rem;
+}

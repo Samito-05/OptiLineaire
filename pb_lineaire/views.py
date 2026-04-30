@@ -30,13 +30,29 @@ def solve(request):
             A.append(row)
 
         b = []
+        operators = []
         for i in range(m):
             raw = request.POST.get(f"b_{i}", "0").strip() or "0"
             b.append(Fraction(raw))
+            op = request.POST.get(f"op_{i}", "le").strip() or "le"
+            operators.append(op)
+
+        # Convertir les opérateurs en forme standard (<=)
+        A_std = []
+        b_std = []
+        for i in range(m):
+            if operators[i] == "ge":
+                # >= devient <= en multipliant par -1
+                A_std.append([-x for x in A[i]])
+                b_std.append(-b[i])
+            else:
+                # le et eq traités comme <=
+                A_std.append(A[i])
+                b_std.append(b[i])
 
         c_solve = [-ci for ci in c] if obj_type == "min" else c
 
-        result = run_simplex(c_solve, A, b)
+        result = run_simplex(c_solve, A_std, b_std)
 
         if obj_type == "min" and result.get("status") == "optimal":
             result["optimal_value"] = str(-Fraction(result["optimal_value"]))
@@ -44,7 +60,18 @@ def solve(request):
         c_display = [str(ci) for ci in c]
         b_display = [str(bi) for bi in b]
         A_display = [[str(aij) for aij in row] for row in A]
-        constraints = list(zip(A_display, b_display))
+
+        # Afficher les opérateurs symboliquement
+        op_display = []
+        for op in operators:
+            if op == "ge":
+                op_display.append("≥")
+            elif op == "eq":
+                op_display.append("=")
+            else:
+                op_display.append("≤")
+
+        constraints = list(zip(A_display, op_display, b_display))
 
         context = {
             "result": result,
@@ -53,6 +80,7 @@ def solve(request):
             "obj_type": obj_type,
             "c_display": c_display,
             "constraints": constraints,
+            "operators": operators,
         }
         return render(request, "pb_lineaire/result.html", context)
 
