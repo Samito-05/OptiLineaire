@@ -1,0 +1,127 @@
+{% extends "pb_lineaire/base.html" %}
+{% block title %}Saisie du problème — OptiLinéaire{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+
+    <h2 class="mb-1">Résolution par la méthode du Simplexe</h2>
+    <p class="text-muted mb-4">Problème sous forme standard : <strong>max Z = c<sup>T</sup>x</strong> &nbsp;s.c.&nbsp; <strong>Ax &le; b</strong>, <strong>x &ge; 0</strong></p>
+
+    {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="{% url 'pb_lineaire:solve' %}" id="mainForm">
+      {% csrf_token %}
+
+      <!-- Paramètres généraux -->
+      <div class="card mb-4 shadow-sm">
+        <div class="card-header fw-bold">Paramètres</div>
+        <div class="card-body row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Nombre de variables (n)</label>
+            <select name="n_vars" id="n_vars" class="form-select" onchange="buildForm()">
+              {% for i in "23456" %}
+              <option value="{{ forloop.counter|add:1 }}">{{ forloop.counter|add:1 }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Nombre de contraintes (m)</label>
+            <select name="n_constraints" id="n_constraints" class="form-select" onchange="buildForm()">
+              {% for i in "23456" %}
+              <option value="{{ forloop.counter|add:1 }}">{{ forloop.counter|add:1 }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Type d'objectif</label>
+            <select name="obj_type" id="obj_type" class="form-select">
+              <option value="max">Maximisation</option>
+              <option value="min">Minimisation</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fonction objectif -->
+      <div class="card mb-4 shadow-sm">
+        <div class="card-header fw-bold">Fonction objectif &nbsp;<span id="obj_label" class="fw-normal text-muted">max Z =</span></div>
+        <div class="card-body">
+          <div id="obj_fields" class="d-flex flex-wrap gap-3 align-items-center"></div>
+        </div>
+      </div>
+
+      <!-- Contraintes -->
+      <div class="card mb-4 shadow-sm">
+        <div class="card-header fw-bold">Contraintes &nbsp;<span class="fw-normal text-muted">Ax &le; b</span></div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-bordered align-middle text-center" id="constraints_table">
+              <thead id="constraints_head" class="table-dark"></thead>
+              <tbody id="constraints_body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg px-5">Résoudre</button>
+    </form>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function buildForm() {
+  const n = parseInt(document.getElementById('n_vars').value);
+  const m = parseInt(document.getElementById('n_constraints').value);
+  const objType = document.getElementById('obj_type').value;
+
+  // Mise à jour label objectif
+  document.getElementById('obj_label').textContent = (objType === 'min' ? 'min' : 'max') + ' Z =';
+
+  // --- Fonction objectif ---
+  const objDiv = document.getElementById('obj_fields');
+  objDiv.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'd-flex align-items-center gap-1';
+    wrapper.innerHTML = `
+      <input type="number" step="any" name="c_${i}" id="c_${i}"
+             class="form-control" style="width:80px" placeholder="c${i+1}" value="0">
+      <span class="text-muted">· x<sub>${i+1}</sub>${i < n-1 ? ' +' : ''}
+      </span>`;
+    objDiv.appendChild(wrapper);
+  }
+
+  // --- En-tête des contraintes ---
+  const thead = document.getElementById('constraints_head');
+  let thRow = '<tr><th>Contrainte</th>';
+  for (let j = 0; j < n; j++) thRow += `<th>x<sub>${j+1}</sub></th>`;
+  thRow += '<th>≤</th><th>b</th></tr>';
+  thead.innerHTML = thRow;
+
+  // --- Corps des contraintes ---
+  const tbody = document.getElementById('constraints_body');
+  tbody.innerHTML = '';
+  for (let i = 0; i < m; i++) {
+    let row = `<tr><td class="fw-bold text-muted">C${i+1}</td>`;
+    for (let j = 0; j < n; j++) {
+      row += `<td><input type="number" step="any" name="a_${i}_${j}" class="form-control form-control-sm" style="width:75px" placeholder="0" value="0"></td>`;
+    }
+    row += `<td class="text-muted">≤</td>`;
+    row += `<td><input type="number" step="any" name="b_${i}" class="form-control form-control-sm" style="width:80px" placeholder="0" value="0"></td>`;
+    row += '</tr>';
+    tbody.innerHTML += row;
+  }
+}
+
+document.getElementById('obj_type').addEventListener('change', buildForm);
+
+// Init au chargement
+buildForm();
+</script>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "pb_lineaire/base.html" %}
+{% block title %}Résolution — OptiLinéaire{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0">Résolution — Méthode du Simplexe</h2>
+  <a href="{% url 'pb_lineaire:index' %}" class="btn btn-outline-secondary">Nouveau problème</a>
+</div>
+
+<!-- Rappel du problème -->
+<div class="card mb-4 shadow-sm">
+  <div class="card-header fw-bold">Problème saisi</div>
+  <div class="card-body">
+    <p class="mb-1">
+      <strong>{{ obj_type|upper }} Z =</strong>
+      {% for ci in c_display %}
+        {{ ci }} · x<sub>{{ forloop.counter }}</sub>{% if not forloop.last %} + {% endif %}
+      {% endfor %}
+    </p>
+    <p class="mb-1 mt-2"><strong>Sous contraintes :</strong></p>
+    <ul class="mb-0">
+      {% for row, bi in constraints %}
+      <li>
+        {% for aij in row %}
+          {{ aij }} · x<sub>{{ forloop.counter }}</sub>{% if not forloop.last %} + {% endif %}
+        {% endfor %}
+        &nbsp;&le;&nbsp; {{ bi }}
+      </li>
+      {% endfor %}
+    </ul>
+    <p class="text-muted mt-2 mb-0">x<sub>j</sub> &ge; 0 pour tout j</p>
+  </div>
+</div>
+
+{% if result.status == "non_admissible" %}
+<div class="alert alert-danger">
+  <strong>Condition d'admissibilité non satisfaite</strong><br>
+  {{ result.message }}
+</div>
+
+{% elif result.status == "unbounded" %}
+<div class="alert alert-warning">
+  <strong>Problème non borné</strong><br>
+  {{ result.message }}
+</div>
+{% include "pb_lineaire/_iterations.html" %}
+
+{% else %}
+<div class="alert alert-success mb-4">
+  <h5 class="alert-heading">Solution optimale trouvée</h5>
+  <strong>Z* = {{ result.optimal_value }}</strong>
+  &nbsp;&nbsp;
+  {% for var, val in result.solution.items %}
+    <span class="badge bg-success">{{ var }} = {{ val }}</span>
+  {% endfor %}
+</div>
+{% include "pb_lineaire/_iterations.html" %}
+{% endif %}
+
+<!-- Légende -->
+<div class="mt-4 d-flex flex-wrap gap-3 align-items-center small text-muted">
+  <strong>Légende :</strong>
+  <span><span class="legend-box" style="background:#e8f4fd;border:1px solid #aaa;width:18px;height:18px;display:inline-block;vertical-align:middle"></span> Ligne LF</span>
+  <span><span class="legend-box" style="background:#cfe2ff;border:1px solid #aaa;width:18px;height:18px;display:inline-block;vertical-align:middle"></span> Variable entrante</span>
+  <span><span class="legend-box" style="background:#fff3cd;border:1px solid #aaa;width:18px;height:18px;display:inline-block;vertical-align:middle"></span> Variable sortante</span>
+  <span><span class="legend-box" style="background:#dc3545;border:1px solid #aaa;width:18px;height:18px;display:inline-block;vertical-align:middle"></span> Pivot</span>
+</div>
+{% endblock %}

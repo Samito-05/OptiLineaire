@@ -1,0 +1,88 @@
+{% for it in result.iterations %}
+<div class="card mb-4 shadow-sm iteration-card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span class="fw-bold">
+      {% if it.number == 0 %}Tableau initial{% else %}Itération {{ it.number }}{% endif %}
+      {% if it.status == "optimal" %}
+        <span class="badge bg-success ms-2">Solution optimale</span>
+      {% elif it.status == "unbounded" %}
+        <span class="badge bg-danger ms-2">Non borné</span>
+      {% endif %}
+    </span>
+
+    {% if it.entering %}
+    <span class="small">
+      <span class="badge bg-primary">Entrante : {{ it.entering }}</span>
+      {% if it.leaving %}
+        <span class="badge bg-warning text-dark">Sortante : {{ it.leaving }}</span>
+        <span class="badge bg-danger">Pivot : {{ it.pivot_value }}</span>
+      {% endif %}
+    </span>
+    {% endif %}
+  </div>
+
+  <div class="card-body p-2">
+
+    {% if it.entering and it.leaving %}
+    <p class="small text-muted mb-2 px-2">
+      <strong>Variable entrante :</strong> {{ it.entering }}
+      (coefficient LF le plus positif) &nbsp;|&nbsp;
+      <strong>Variable sortante :</strong> {{ it.leaving }}
+      (ratio minimum) &nbsp;|&nbsp;
+      <strong>Élément pivot :</strong> {{ it.pivot_value }}
+      (ligne {{ it.leaving }}, colonne {{ it.entering }})
+    </p>
+    {% endif %}
+
+    <div class="table-responsive px-2">
+      <table class="simplex-table">
+        <!-- En-tête : LF en haut, variables de base à gauche -->
+        <thead>
+          <tr>
+            <th class="label-col">Base</th>
+            {% for col in it.col_headers %}
+              <th {% if col == it.entering %}class="col-entering"{% endif %}>{{ col }}</th>
+            {% endfor %}
+            <th>b</th>
+            {% if it.entering %}<th class="ratio-col">Ratio</th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in it.rows %}
+          <tr class="{% if row.is_lf %}row-lf{% elif row.is_leaving %}row-leaving{% endif %}">
+            <!-- Label de la ligne (LF ou variable de base) -->
+            <td class="label-col">{{ row.label }}</td>
+
+            <!-- Cellules des variables -->
+            {% for cell in row.cells %}
+              <td class="{% if cell.type == 'pivot' %}cell-pivot{% elif cell.type == 'entering' and not row.is_lf %}col-entering{% elif cell.type == 'leaving' %}{% endif %}
+                         {% if cell.type == 'entering' and row.is_lf %}col-entering{% endif %}">
+                {% if cell.type == "pivot" %}
+                  <strong>{{ cell.value }}</strong>
+                {% else %}
+                  {{ cell.value }}
+                {% endif %}
+              </td>
+            {% endfor %}
+
+            <!-- RHS (b) -->
+            <td {% if row.is_leaving %}class="row-leaving"{% endif %}>{{ row.rhs.value }}</td>
+
+            <!-- Ratio -->
+            {% if it.entering %}
+            <td class="ratio-col">
+              {% if not row.is_lf %}
+                {{ row.ratio }}
+                {% if row.is_leaving %} ← min{% endif %}
+              {% endif %}
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+{% endfor %}
