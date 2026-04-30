@@ -105,7 +105,7 @@ function buildForm() {
     wrapper.className = 'd-flex align-items-center gap-1';
      wrapper.innerHTML = `
        <input type="number" step="any" name="c_${i}" id="c_${i}"
-              class="form-control" style="width:80px" placeholder="c${i+1}" value="0">
+              class="form-control" style="width:80px" placeholder="\\(c_{${i+1}}\\)" value="0">
        <span class="text-muted">· \\(x_{${i+1}}\\)${i < n-1 ? ' +' : ''}
        </span>`;
     objDiv.appendChild(wrapper);
@@ -115,14 +115,14 @@ function buildForm() {
    const thead = document.getElementById('constraints_head');
     let thRow = '<tr><th>Contrainte</th>';
     for (let j = 0; j < n; j++) thRow += `<th>\\(x_{${j+1}}\\)</th>`;
-    thRow += '<th>Opérateur</th><th>b</th></tr>';
+    thRow += '<th>Opérateur</th><th>\\(b\\)</th></tr>';
    thead.innerHTML = thRow;
 
    // --- Corps des contraintes ---
    const tbody = document.getElementById('constraints_body');
    tbody.innerHTML = '';
    for (let i = 0; i < m; i++) {
-     let row = `<tr><td class="fw-bold text-muted">C${i+1}</td>`;
+     let row = `<tr><td class="fw-bold text-muted">\\(C_{${i+1}}\\)</td>`;
      for (let j = 0; j < n; j++) {
        row += `<td><input type="number" step="any" name="a_${i}_${j}" class="form-control form-control-sm text-center input-width-constraint-coef" placeholder="0" value="0"></td>`;
      }
