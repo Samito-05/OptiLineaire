@@ -20,7 +20,7 @@
         <div class="card-header fw-bold">Paramètres</div>
         <div class="card-body row g-3">
           <div class="col-md-3">
-            <label class="form-label">Nombre de variables (n)</label>
+            <label class="form-label">Nb de variables</label>
             <select name="n_vars" id="n_vars" class="form-select" onchange="buildForm()">
               {% for i in "2345678901234567890123456789" %}
               <option value="{{ forloop.counter|add:1 }}">{{ forloop.counter|add:1 }}</option>
@@ -28,7 +28,7 @@
             </select>
           </div>
           <div class="col-md-3">
-            <label class="form-label">Nombre de contraintes (m)</label>
+            <label class="form-label">Nb de contraintes</label>
             <select name="n_constraints" id="n_constraints" class="form-select" onchange="buildForm()">
               {% for i in "2345678901234567890123456789" %}
               <option value="{{ forloop.counter|add:1 }}">{{ forloop.counter|add:1 }}</option>
