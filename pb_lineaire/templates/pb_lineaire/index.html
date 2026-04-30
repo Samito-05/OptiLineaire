@@ -6,7 +6,7 @@
   <div class="col-lg-9">
 
     <h2 class="mb-1">Résolution par la méthode du Simplexe</h2>
-    <p class="text-muted mb-4">Problème sous forme standard : <strong>max Z = c<sup>T</sup>x</strong> &nbsp;s.c.&nbsp; <strong>Ax &le; b</strong>, <strong>x &ge; 0</strong></p>
+    <p class="text-muted mb-4">Problème sous forme standard : <strong>max Z = \(c^Tx\)</strong> &nbsp;s.c.&nbsp; <strong>\(Ax \le b\)</strong>, <strong>\(x \ge 0\)</strong></p>
 
     {% if error %}
     <div class="alert alert-danger">{{ error }}</div>
@@ -59,7 +59,7 @@
 
       <!-- Contraintes -->
       <div class="card mb-4 shadow-sm">
-        <div class="card-header fw-bold">Contraintes &nbsp;<span class="fw-normal text-muted">Ax &le; b</span></div>
+        <div class="card-header fw-bold">Contraintes &nbsp;<span class="fw-normal text-muted">\(Ax \le b\)</span></div>
         <div class="card-body">
           <div class="table-responsive">
             <table class="table table-bordered align-middle text-center" id="constraints_table">
@@ -93,19 +93,19 @@ function buildForm() {
   for (let i = 0; i < n; i++) {
     const wrapper = document.createElement('div');
     wrapper.className = 'd-flex align-items-center gap-1';
-    wrapper.innerHTML = `
-      <input type="number" step="any" name="c_${i}" id="c_${i}"
-             class="form-control" style="width:80px" placeholder="c${i+1}" value="0">
-      <span class="text-muted">· x<sub>${i+1}</sub>${i < n-1 ? ' +' : ''}
-      </span>`;
+     wrapper.innerHTML = `
+       <input type="number" step="any" name="c_${i}" id="c_${i}"
+              class="form-control" style="width:80px" placeholder="c${i+1}" value="0">
+       <span class="text-muted">· \\(x_{${i+1}}\\)${i < n-1 ? ' +' : ''}
+       </span>`;
     objDiv.appendChild(wrapper);
   }
 
   // --- En-tête des contraintes ---
   const thead = document.getElementById('constraints_head');
-  let thRow = '<tr><th>Contrainte</th>';
-  for (let j = 0; j < n; j++) thRow += `<th>x<sub>${j+1}</sub></th>`;
-  thRow += '<th>≤</th><th>b</th></tr>';
+   let thRow = '<tr><th>Contrainte</th>';
+   for (let j = 0; j < n; j++) thRow += `<th>\\(x_{${j+1}}\\)</th>`;
+   thRow += '<th>≤</th><th>b</th></tr>';
   thead.innerHTML = thRow;
 
   // --- Corps des contraintes ---
@@ -118,10 +118,15 @@ function buildForm() {
     }
     row += `<td class="text-muted">≤</td>`;
     row += `<td><input type="number" step="any" name="b_${i}" class="form-control form-control-sm" style="width:80px" placeholder="0" value="0"></td>`;
-    row += '</tr>';
-    tbody.innerHTML += row;
-  }
-}
+     row += '</tr>';
+     tbody.innerHTML += row;
+   }
+
+   // Demander à MathJax de retraiter le DOM pour les nouvelles équations
+   if (typeof MathJax !== 'undefined') {
+     MathJax.typesetPromise().catch(err => console.log(err));
+   }
+ }
 
 document.getElementById('obj_type').addEventListener('change', buildForm);
 
@@ -149,10 +154,15 @@ function fillRandom() {
     }
     // Remplir b
     const bValue = Math.floor(Math.random() * 100) + 20; // 20-120
-    const bInput = document.querySelector(`input[name="b_${i}"]`);
-    if (bInput) bInput.value = bValue;
-  }
-}
+   const bInput = document.querySelector(`input[name="b_${i}"]`);
+     if (bInput) bInput.value = bValue;
+   }
+
+   // Demander à MathJax de retraiter le DOM
+   if (typeof MathJax !== 'undefined') {
+     MathJax.typesetPromise().catch(err => console.log(err));
+   }
+ }
 
 </script>
 {% endblock %}

@@ -1,3 +1,4 @@
+{% load math_notation %}
 {% for it in result.iterations %}
 <div class="card mb-4 shadow-sm iteration-card">
 
@@ -13,9 +14,9 @@
     </span>
     {% if it.entering %}
     <span class="small">
-      <span class="badge bg-primary">Entrante : {{ it.entering }}</span>
+      <span class="badge bg-primary">Entrante : {{ it.entering|math_var }}</span>
       {% if it.leaving %}
-        <span class="badge bg-warning text-dark">Sortante : {{ it.leaving }}</span>
+        <span class="badge bg-warning text-dark">Sortante : {{ it.leaving|math_var }}</span>
         <span class="badge bg-danger">Pivot : {{ it.pivot_value }}</span>
       {% endif %}
     </span>
@@ -27,15 +28,15 @@
     <!-- Résumé du choix de pivot -->
     {% if it.entering and it.leaving %}
     <div class="alert alert-light border py-2 px-3 mb-3 small">
-      <strong>Variable entrante :</strong> {{ it.entering }}
+      <strong>Variable entrante :</strong> {{ it.entering|math_var }}
         <span class="text-muted">(coefficient LF le plus positif)</span>
       &nbsp;|&nbsp;
-      <strong>Variable sortante :</strong> {{ it.leaving }}
+      <strong>Variable sortante :</strong> {{ it.leaving|math_var }}
         <span class="text-muted">(ratio minimum)</span>
       &nbsp;|&nbsp;
       <strong>Élément pivot :</strong>
         <span class="badge bg-danger">{{ it.pivot_value }}</span>
-        <span class="text-muted">(ligne {{ it.leaving }}, colonne {{ it.entering }})</span>
+        <span class="text-muted">(ligne {{ it.leaving|math_var }}, colonne {{ it.entering|math_var }})</span>
     </div>
     {% endif %}
 
@@ -46,7 +47,7 @@
           <tr>
             <th class="label-col">Base</th>
             {% for col in it.col_headers %}
-              <th {% if col == it.entering %}class="col-entering"{% endif %}>{{ col }}</th>
+              <th {% if col == it.entering %}class="col-entering"{% endif %}>{{ col|math_var }}</th>
             {% endfor %}
             <th>b</th>
             {% if it.entering %}<th class="ratio-col">Ratio</th>{% endif %}
@@ -55,7 +56,7 @@
         <tbody>
           {% for row in it.rows %}
           <tr class="{% if row.is_lf %}row-lf{% elif row.is_leaving %}row-leaving{% endif %}">
-            <td class="label-col">{{ row.label }}</td>
+            <td class="label-col">{{ row.label|math_var }}</td>
             {% for cell in row.cells %}
               <td class="{% if cell.type == 'pivot' %}cell-pivot{% elif cell.type == 'entering' %}col-entering{% elif cell.type == 'leaving' %}row-leaving{% endif %}">
                 {% if cell.type == "pivot" %}<strong>{{ cell.value }}</strong>{% else %}{{ cell.value }}{% endif %}
@@ -89,7 +90,7 @@
         </div>
 
         <div class="collapse" id="pivotSteps-{{ it.number }}">
-          <div class="small text-muted mb-2">Pivot {{ it.pivot_value }} · colonne {{ it.entering }} · ligne {{ it.leaving }}</div>
+          <div class="small text-muted mb-2">Pivot {{ it.pivot_value }} · colonne {{ it.entering|math_var }} · ligne {{ it.leaving|math_var }}</div>
           <div class="d-grid gap-2">
             {% for step in it.pivot_steps %}
             <div class="pivot-step-card border rounded p-2">
@@ -100,21 +101,21 @@
                   {% else %}
                     <span class="badge bg-info text-dark me-2">Étape 2</span>
                   {% endif %}
-                  {{ step.operation }}
+                  {{ step.operation|math_text }}
                 </div>
-                <div class="text-muted small formula-text">{{ step.formula }}</div>
+                <div class="text-muted small formula-text">{{ step.formula|math_text }}</div>
               </div>
               <table class="simplex-table w-100 pivot-step-table">
                 <thead>
                   <tr>
                     <th class="label-col pivot-step-label-col">Ligne</th>
-                    {% for col in it.col_headers %}<th>{{ col }}</th>{% endfor %}
+                    {% for col in it.col_headers %}<th>{{ col|math_var }}</th>{% endfor %}
                     <th>b</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td class="label-col">{{ step.row_label }}</td>
+                    <td class="label-col">{{ step.row_label|math_var }}</td>
                     {% for val in step.new_row %}
                       <td>{{ val }}</td>
                     {% endfor %}

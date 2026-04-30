@@ -32,7 +32,7 @@ def run_simplex(c_input, A_input, b_input):
             }
 
     orig_vars = [f"x{i+1}" for i in range(n)]
-    slack_vars = [f"s{i+1}" for i in range(m)]
+    slack_vars = [f"y{i+1}" for i in range(m)]
     var_names = orig_vars + slack_vars
     num_vars = n + m
 
@@ -47,7 +47,7 @@ def run_simplex(c_input, A_input, b_input):
         row[n + i] = Fraction(1)
         tableau.append(row)
 
-    # Base initiale : variables d'écart s1..sm
+    # Base initiale : variables d'écart y1..ym
     basis = [n + i for i in range(m)]
 
     iterations = []
@@ -188,7 +188,7 @@ def _compute_pivot_steps(tableau, basis, var_names, m, n, entering_col, leaving_
         if abs(factor) == 1:
             formula = f"On annule {entering_label} dans {row_label} en faisant : {row_label} ← {row_label} {sign} {pivot_row_label}."
         else:
-            formula = f"On annule {entering_label} dans {row_label} en faisant : {row_label} ← {row_label} {sign} {f_str} × {pivot_row_label}."
+            formula = f"On annule {entering_label} dans {row_label} en faisant : {row_label} ← {row_label} {sign} {f_str} · {pivot_row_label}."
         new_row = [
             tableau[i][j] - factor * new_pivot_row[j]
             for j in range(num_vars + 1)

@@ -1,4 +1,5 @@
 {% extends "pb_lineaire/base.html" %}
+{% load math_notation %}
 {% block title %}Résolution — OptiLinéaire{% endblock %}
 
 {% block content %}
@@ -14,7 +15,7 @@
     <p class="mb-1">
       <strong>{{ obj_type|upper }} Z =</strong>
       {% for ci in c_display %}
-        {{ ci }} · x<sub>{{ forloop.counter }}</sub>{% if not forloop.last %} + {% endif %}
+        {{ ci }} · {{ forloop.counter|math_index:"x" }}{% if not forloop.last %} + {% endif %}
       {% endfor %}
     </p>
     <p class="mb-1 mt-2"><strong>Sous contraintes :</strong></p>
@@ -22,13 +23,13 @@
       {% for row, bi in constraints %}
       <li>
         {% for aij in row %}
-          {{ aij }} · x<sub>{{ forloop.counter }}</sub>{% if not forloop.last %} + {% endif %}
+          {{ aij }} · {{ forloop.counter|math_index:"x" }}{% if not forloop.last %} + {% endif %}
         {% endfor %}
         &nbsp;&le;&nbsp; {{ bi }}
       </li>
       {% endfor %}
     </ul>
-    <p class="text-muted mt-2 mb-0">x<sub>j</sub> &ge; 0 pour tout j</p>
+    <p class="text-muted mt-2 mb-0">\(x_j\) &ge; 0 pour tout j</p>
   </div>
 </div>
 
@@ -51,7 +52,7 @@
   <strong>Z* = {{ result.optimal_value }}</strong>
   &nbsp;&nbsp;
   {% for var, val in result.solution.items %}
-    <span class="badge bg-success">{{ var }} = {{ val }}</span>
+    <span class="badge bg-success">{{ var|math_var }} = {{ val }}</span>
   {% endfor %}
 </div>
 {% include "pb_lineaire/_iterations.html" %}
