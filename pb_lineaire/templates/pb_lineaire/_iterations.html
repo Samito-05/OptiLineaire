@@ -75,52 +75,57 @@
 
     <!-- Étapes détaillées du pivotage -->
     {% if it.pivot_steps %}
-    <div class="border rounded p-3 bg-light">
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-        <div>
-          <div class="fw-bold small text-uppercase text-secondary">Comment on fait le pivot</div>
-          <div class="text-muted small">1) On rend la ligne pivot égale à 1, <br> 2) On enlève la variable entrante des autres lignes.</div>
-        </div>
-        <div class="small text-muted">
-          Pivot {{ it.pivot_value }} · colonne {{ it.entering }} · ligne {{ it.leaving }}
-        </div>
-      </div>
-
-      <div class="d-grid gap-2">
-        {% for step in it.pivot_steps %}
-        <div class="pivot-step-card border rounded p-2">
-          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-            <div class="fw-semibold small">
-              {% if step.kind == "normalize" %}
-                <span class="badge bg-warning text-dark me-2">Étape 1</span>
-              {% else %}
-                <span class="badge bg-info text-dark me-2">Étape 2</span>
-              {% endif %}
-              {{ step.operation }}
-            </div>
-            <div class="text-muted small" style="font-family:monospace">{{ step.formula }}</div>
+      <div class="border rounded p-3 bg-light">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+          <div>
+            <div class="fw-bold small text-uppercase text-secondary">Comment on fait le pivot</div>
+            <div class="text-muted small">1) On rend la ligne pivot égale à 1, <br> 2) On enlève la variable entrante des autres lignes.</div>
           </div>
-          <table class="simplex-table w-100" style="font-size:.82rem">
-            <thead>
-              <tr>
-                <th class="label-col" style="min-width:120px">Ligne</th>
-                {% for col in it.col_headers %}<th>{{ col }}</th>{% endfor %}
-                <th>b</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="label-col">{{ step.row_label }}</td>
-                {% for val in step.new_row %}
-                  <td>{{ val }}</td>
-                {% endfor %}
-              </tr>
-            </tbody>
-          </table>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-secondary collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#pivotSteps-{{ it.number }}" aria-expanded="false" aria-controls="pivotSteps-{{ it.number }}">
+              Détails <span class="collapse-icon ms-2">▾</span>
+            </button>
+          </div>
         </div>
-        {% endfor %}
+
+        <div class="collapse" id="pivotSteps-{{ it.number }}">
+          <div class="small text-muted mb-2">Pivot {{ it.pivot_value }} · colonne {{ it.entering }} · ligne {{ it.leaving }}</div>
+          <div class="d-grid gap-2">
+            {% for step in it.pivot_steps %}
+            <div class="pivot-step-card border rounded p-2">
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                <div class="fw-semibold small">
+                  {% if step.kind == "normalize" %}
+                    <span class="badge bg-warning text-dark me-2">Étape 1</span>
+                  {% else %}
+                    <span class="badge bg-info text-dark me-2">Étape 2</span>
+                  {% endif %}
+                  {{ step.operation }}
+                </div>
+                <div class="text-muted small formula-text">{{ step.formula }}</div>
+              </div>
+              <table class="simplex-table w-100 pivot-step-table">
+                <thead>
+                  <tr>
+                    <th class="label-col pivot-step-label-col">Ligne</th>
+                    {% for col in it.col_headers %}<th>{{ col }}</th>{% endfor %}
+                    <th>b</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="label-col">{{ step.row_label }}</td>
+                    {% for val in step.new_row %}
+                      <td>{{ val }}</td>
+                    {% endfor %}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
       </div>
-    </div>
     {% endif %}
 
   </div>

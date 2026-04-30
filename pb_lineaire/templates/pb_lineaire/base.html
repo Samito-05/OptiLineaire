@@ -156,6 +156,15 @@
     .theme-toggle {
       white-space: nowrap;
     }
+    .collapse-icon {
+      display: inline-block;
+      transition: transform .22s ease;
+      transform-origin: 50% 50%;
+      transform: rotate(0deg);
+    }
+    .btn:not(.collapsed) .collapse-icon {
+      transform: rotate(180deg);
+    }
   </style>
 </head>
 <body>
