@@ -1,6 +1,18 @@
 # Editor / IDE
 .idea/
 .vscode/
+.claude/
+.cursor/
+.copilot/
+.codex/
+.continue/
+.roo/
+.windsurf/
+
+# Local assistant / workspace metadata
+.github-copilot/
+.chatgpt/
+.prompts/
 
 # Python
 __pycache__/
@@ -35,3 +47,7 @@ collectstatic/
 # OS / misc
 Thumbs.db
 Desktop.ini
+.DS_Store
+*.log
+*.tmp
+*.temp
