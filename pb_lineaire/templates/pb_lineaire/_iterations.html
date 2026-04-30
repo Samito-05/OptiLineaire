@@ -89,8 +89,8 @@
           </div>
         </div>
 
-        <div class="collapse" id="pivotSteps-{{ it.number }}">
-          <div class="small text-muted mb-2">Pivot {{ it.pivot_value }} · colonne {{ it.entering|math_var }} · ligne {{ it.leaving|math_var }}</div>
+        <div class="collapse" id="pivotSteps-{{ it.number }}" style="overflow-x: auto;">
+          <div class="small text-muted mb-2">Pivot {{ it.pivot_value }} · colonne {{ it.entering|math_var  }} · ligne {{ it.leaving|math_var  }}</div>
           <div class="d-grid gap-2">
             {% for step in it.pivot_steps %}
             <div class="pivot-step-card border rounded p-2">
@@ -105,23 +105,25 @@
                 </div>
                 <div class="text-muted small formula-text">{{ step.formula|math_text }}</div>
               </div>
-              <table class="simplex-table w-100 pivot-step-table">
-                <thead>
-                  <tr>
-                    <th class="label-col pivot-step-label-col">Ligne</th>
-                    {% for col in it.col_headers %}<th>{{ col|math_var }}</th>{% endfor %}
-                    <th>b</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td class="label-col">{{ step.row_label|math_var }}</td>
-                    {% for val in step.new_row %}
-                      <td>{{ val }}</td>
-                    {% endfor %}
-                  </tr>
-                </tbody>
-              </table>
+              <div class="table-responsive">
+                <table class="simplex-table pivot-step-table">
+                  <thead>
+                    <tr>
+                      <th class="label-col pivot-step-label-col">Ligne</th>
+                      {% for col in it.col_headers %}<th>{{ col|math_var }}</th>{% endfor %}
+                      <th>b</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="label-col">{{ step.row_label|math_var }}</td>
+                      {% for val in step.new_row %}
+                        <td>{{ val }}</td>
+                      {% endfor %}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
             {% endfor %}
           </div>
