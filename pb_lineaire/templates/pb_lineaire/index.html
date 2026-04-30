@@ -5,8 +5,8 @@
 <div class="row justify-content-center">
   <div class="col-lg-9">
 
-    <h2 class="mb-1">Résolution par la méthode du Simplexe</h2>
-    <p class="text-muted mb-4">Problème sous forme standard : <strong>max Z = \(c^Tx\)</strong> &nbsp;s.c.&nbsp; <strong>\(Ax \le b\)</strong>, <strong>\(x \ge 0\)</strong></p>
+    <h2 class="mb-1" id="pageTitle">Résolution — Détection automatique</h2>
+    <p class="text-muted mb-4" id="pageDesc">La méthode (Simplexe ou deux phases) sera choisie automatiquement selon la structure du problème.</p>
 
     {% if error %}
     <div class="alert alert-danger">{{ error }}</div>
@@ -17,7 +17,18 @@
 
       <!-- Paramètres généraux -->
       <div class="card mb-4 shadow-sm">
-        <div class="card-header fw-bold">Paramètres</div>
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span class="fw-bold">Paramètres</span>
+          <div class="d-flex align-items-center gap-2">
+            <input type="hidden" name="method" id="method" value="auto">
+            <div class="method-toggle" id="methodToggle" onclick="cycleMethod()" title="Cliquer pour changer de méthode">
+              <div class="method-track">
+                <div class="method-knob" id="methodKnob"></div>
+              </div>
+              <span class="method-label" id="methodLabel">Auto <span class="badge bg-secondary method-badge">Détection</span></span>
+            </div>
+          </div>
+        </div>
         <div class="card-body row g-3">
           <div class="col-md-3">
             <label class="form-label">Nb de variables</label>
@@ -42,8 +53,7 @@
               <option value="min">Minimisation</option>
             </select>
           </div>
-          <div class="col-md-3">
-            <label class="form-label">&nbsp;</label>
+          <div class="col-md-3" style="align-self:flex-end">
             <button type="button" class="btn btn-secondary w-100" onclick="fillRandom()">Remplir aléatoire</button>
           </div>
         </div>
@@ -134,8 +144,57 @@ function buildForm() {
 
 document.getElementById('obj_type').addEventListener('change', buildForm);
 
+// ── Toggle méthode (3 états : auto → simplex → two_phase → auto) ──
+const METHOD_STATES = [
+  {
+    value: 'auto',
+    cls: '',
+    label: 'Auto <span class="badge bg-secondary method-badge">Détection</span>',
+    navbar: 'Détection automatique',
+    title: 'Résolution — Détection automatique',
+    desc: 'La méthode (Simplexe ou deux phases) sera choisie automatiquement selon la structure du problème.',
+  },
+  {
+    value: 'simplex',
+    cls: 'active',
+    label: 'Simplexe',
+    navbar: 'Méthode du Simplexe',
+    title: 'Résolution par la méthode du Simplexe',
+    desc: 'Problème sous forme standard : <strong>max Z = \\(c^Tx\\)</strong> &nbsp;s.c.&nbsp; <strong>\\(Ax \\le b\\)</strong>, <strong>\\(x \\ge 0\\)</strong>',
+  },
+  {
+    value: 'two_phase',
+    cls: 'active active2',
+    label: 'Deux phases <span class="badge bg-primary method-badge">Phase&nbsp;1+2</span>',
+    navbar: 'Méthode des deux phases',
+    title: 'Résolution par la méthode des deux phases',
+    desc: 'Pour les problèmes avec contraintes &ge; ou membres droits négatifs, nécessitant une solution de base artificielle.',
+  },
+];
+let _methodIdx = 0;
+
+function applyMethod(state) {
+  document.getElementById('methodToggle').className = 'method-toggle ' + state.cls;
+  document.getElementById('method').value           = state.value;
+  document.getElementById('methodLabel').innerHTML  = state.label;
+
+  const navbar = document.getElementById('navbarMethodText');
+  if (navbar) navbar.textContent = state.navbar;
+
+  document.getElementById('pageTitle').textContent = state.title;
+  const descEl = document.getElementById('pageDesc');
+  descEl.innerHTML = state.desc;
+  if (typeof MathJax !== 'undefined') MathJax.typesetPromise([descEl]).catch(console.log);
+}
+
+function cycleMethod() {
+  _methodIdx = (_methodIdx + 1) % METHOD_STATES.length;
+  applyMethod(METHOD_STATES[_methodIdx]);
+}
+
 // Init au chargement
 buildForm();
+applyMethod(METHOD_STATES[0]);
 
 // Fonction pour remplir aléatoirement
 function fillRandom() {

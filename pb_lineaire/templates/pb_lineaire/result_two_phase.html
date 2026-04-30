@@ -1,0 +1,131 @@
+{% extends "pb_lineaire/base.html" %}
+{% load math_notation %}
+{% block title %}Deux phases — OptiLinéaire{% endblock %}
+{% block navbar_method %}Méthode des deux phases{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0">Méthode des deux phases</h2>
+  <a href="{% url 'pb_lineaire:index' %}" class="btn btn-outline-secondary">Nouveau problème</a>
+</div>
+
+<!-- Rappel du problème -->
+<div class="card mb-4 shadow-sm">
+  <div class="card-header fw-bold">Problème saisi</div>
+  <div class="card-body">
+    <p class="mb-1">
+      <strong>{{ obj_type|upper }} Z =</strong>
+      {% for ci in c_display %}
+        {{ ci }} · {{ forloop.counter|math_index:"x" }}{% if not forloop.last %} + {% endif %}
+      {% endfor %}
+    </p>
+    <p class="mb-1 mt-2"><strong>Sous contraintes :</strong></p>
+    <ul class="mb-0">
+      {% for row, op, bi in constraints %}
+      <li>
+        {% for aij in row %}
+          {{ aij }} · {{ forloop.counter|math_index:"x" }}{% if not forloop.last %} + {% endif %}
+        {% endfor %}
+        &nbsp;{{ op }}&nbsp; {{ bi }}
+      </li>
+      {% endfor %}
+    </ul>
+    <p class="text-muted mt-2 mb-0"><i>x</i><sub>j</sub> &ge; 0 pour tout j</p>
+  </div>
+</div>
+
+{% if result.status == "infeasible" %}
+<!-- ============================================================ INFAISABLE -->
+<div class="alert alert-danger mb-4">
+  <h5 class="alert-heading">Problème infaisable</h5>
+  {{ result.message }}
+</div>
+
+<h4 class="mb-3">
+  <span class="badge bg-secondary me-2">Phase 1</span>
+  Minimisation des variables artificielles
+  <small class="text-muted fw-normal">({{ result.phase1.var_names|join:", " }})</small>
+</h4>
+<div class="alert alert-danger small">
+  La valeur optimale de Phase 1 est {{ result.phase1.optimal_value }} &ne; 0 — le problème n'admet aucune solution admissible.
+</div>
+{% with result=result.phase1 %}
+  {% include "pb_lineaire/_iterations.html" %}
+{% endwith %}
+
+{% else %}
+
+<!-- ============================================================ PHASE 1 -->
+<div class="d-flex align-items-center gap-3 mb-3">
+  <h4 class="mb-0">
+    <span class="badge bg-info text-dark me-2">Phase 1</span>
+    Minimisation des variables artificielles
+  </h4>
+  <span class="text-muted small">Variables : {{ result.phase1.var_names|join:", " }}</span>
+</div>
+
+<div class="alert alert-info small mb-3">
+  <strong>Objectif Phase 1 :</strong>
+  minimiser la somme des variables artificielles
+  ({% for v in result.phase1.var_names %}{% if "a" in v %}{{ v }}{% if not forloop.last %} + {% endif %}{% endif %}{% endfor %}).
+  Si le minimum est 0, le problème est admissible et on passe en Phase 2.
+</div>
+
+{% with result=result.phase1 %}
+  {% include "pb_lineaire/_iterations.html" %}
+{% endwith %}
+
+<div class="alert alert-success mb-4">
+  <strong>Phase 1 terminée</strong> — valeur optimale = {{ result.phase1.optimal_value }} = 0.
+  Le problème est admissible. Base admissible trouvée.
+</div>
+
+<!-- ============================================================ PHASE 2 -->
+<div class="d-flex align-items-center gap-3 mb-3">
+  <h4 class="mb-0">
+    <span class="badge bg-primary me-2">Phase 2</span>
+    Résolution du problème original
+  </h4>
+  <span class="text-muted small">Variables : {{ result.phase2.var_names|join:", " }}</span>
+</div>
+
+<div class="alert alert-secondary small mb-3">
+  <strong>Objectif Phase 2 :</strong>
+  {{ obj_type|upper }} Z =
+  {% for ci in c_display %}
+    {{ ci }} · {{ forloop.counter|math_index:"x" }}{% if not forloop.last %} + {% endif %}
+  {% endfor %}
+  — résolu depuis la base admissible de Phase 1 (variables artificielles supprimées).
+</div>
+
+{% with result=result.phase2 %}
+  {% include "pb_lineaire/_iterations.html" %}
+{% endwith %}
+
+{% if result.status == "unbounded" %}
+<div class="alert alert-warning mt-3">
+  <strong>Problème non borné</strong> — {{ result.message }}
+</div>
+{% else %}
+<!-- Solution finale -->
+<div class="alert alert-success mt-3">
+  <h5 class="alert-heading">Solution optimale</h5>
+  <strong>Z* = {{ result.optimal_value }}</strong>
+  &nbsp;&nbsp;
+  {% for var, val in result.solution.items %}
+    <span class="badge bg-success">{{ var|math_var }} = {{ val }}</span>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endif %}{# end if infeasible #}
+
+<!-- Légende -->
+<div class="mt-4 d-flex flex-wrap gap-3 align-items-center small text-muted">
+  <strong>Légende :</strong>
+  <span><span style="background:#e8f4fd;border:1px solid #aaa;width:18px;height:18px;display:inline-block;vertical-align:middle"></span> Ligne LF</span>
+  <span><span style="background:#cfe2ff;border:1px solid #aaa;width:18px;height:18px;display:inline-block;vertical-align:middle"></span> Variable entrante</span>
+  <span><span style="background:#fff3cd;border:1px solid #aaa;width:18px;height:18px;display:inline-block;vertical-align:middle"></span> Variable sortante</span>
+  <span><span style="background:#dc3545;border:1px solid #aaa;width:18px;height:18px;display:inline-block;vertical-align:middle"></span> Pivot</span>
+</div>
+{% endblock %}

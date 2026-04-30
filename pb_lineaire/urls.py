@@ -6,4 +6,5 @@ app_name = "pb_lineaire"
 urlpatterns = [
     path("", views.index, name="index"),
     path("solve/", views.solve, name="solve"),
+    path("deux-phases/", views.solve, name="solve_two_phase"),
 ]
