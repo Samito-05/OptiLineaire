@@ -19,28 +19,32 @@
       <div class="card mb-4 shadow-sm">
         <div class="card-header fw-bold">Paramètres</div>
         <div class="card-body row g-3">
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label">Nombre de variables (n)</label>
             <select name="n_vars" id="n_vars" class="form-select" onchange="buildForm()">
-              {% for i in "23456" %}
+              {% for i in "2345678901234567890123456789" %}
               <option value="{{ forloop.counter|add:1 }}">{{ forloop.counter|add:1 }}</option>
               {% endfor %}
             </select>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label">Nombre de contraintes (m)</label>
             <select name="n_constraints" id="n_constraints" class="form-select" onchange="buildForm()">
-              {% for i in "23456" %}
+              {% for i in "2345678901234567890123456789" %}
               <option value="{{ forloop.counter|add:1 }}">{{ forloop.counter|add:1 }}</option>
               {% endfor %}
             </select>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label">Type d'objectif</label>
             <select name="obj_type" id="obj_type" class="form-select">
               <option value="max">Maximisation</option>
               <option value="min">Minimisation</option>
             </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">&nbsp;</label>
+            <button type="button" class="btn btn-secondary w-100" onclick="fillRandom()">Remplir aléatoire</button>
           </div>
         </div>
       </div>
@@ -123,5 +127,32 @@ document.getElementById('obj_type').addEventListener('change', buildForm);
 
 // Init au chargement
 buildForm();
+
+// Fonction pour remplir aléatoirement
+function fillRandom() {
+  const n = parseInt(document.getElementById('n_vars').value);
+  const m = parseInt(document.getElementById('n_constraints').value);
+  
+  // Remplir fonction objectif
+  for (let i = 0; i < n; i++) {
+    const value = Math.floor(Math.random() * 10) + 1; // 1-10
+    const input = document.getElementById(`c_${i}`);
+    if (input) input.value = value;
+  }
+  
+  // Remplir contraintes (A et b)
+  for (let i = 0; i < m; i++) {
+    for (let j = 0; j < n; j++) {
+      const value = Math.floor(Math.random() * 20) + 1; // 1-20
+      const input = document.querySelector(`input[name="a_${i}_${j}"]`);
+      if (input) input.value = value;
+    }
+    // Remplir b
+    const bValue = Math.floor(Math.random() * 100) + 20; // 20-120
+    const bInput = document.querySelector(`input[name="b_${i}"]`);
+    if (bInput) bInput.value = bValue;
+  }
+}
+
 </script>
 {% endblock %}
