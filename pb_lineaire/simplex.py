@@ -99,12 +99,19 @@ def run_simplex(c_input, A_input, b_input):
         _, leaving_row = min(valid, key=lambda x: x[0])
         pivot_val = tableau[leaving_row][entering_col]
 
+        # --- Calcul des étapes de pivotage (avant modification du tableau) ---
+        pivot_steps = _compute_pivot_steps(
+            tableau, basis, var_names, m, n,
+            entering_col, leaving_row, pivot_val
+        )
+
         snap = _snapshot(
             tableau, basis, var_names, m, n,
             entering_col, leaving_row, ratios, pivot_val
         )
         snap["number"] = it_num
         snap["status"] = "pivot"
+        snap["pivot_steps"] = pivot_steps
         iterations.append(snap)
 
         # --- Opération de pivot ---
@@ -136,6 +143,66 @@ def run_simplex(c_input, A_input, b_input):
         "m": m,
         "var_names": orig_vars,
     }
+
+
+def _compute_pivot_steps(tableau, basis, var_names, m, n, entering_col, leaving_row, pivot_val):
+    """
+    Calcule et retourne les étapes détaillées du pivotage :
+      1. Normalisation de la ligne pivot (division par pivot_val)
+      2. Élimination dans chaque autre ligne
+    """
+    num_vars = n + m
+    pivot_label = var_names[basis[leaving_row - 1]]
+    entering_label = var_names[entering_col]
+    steps = []
+
+    # Étape 1 : normalisation de la ligne pivot
+    new_pivot_row = [x / pivot_val for x in tableau[leaving_row]]
+    p_str = fmt(pivot_val)
+    if pivot_val == 1:
+        formula = f"La ligne pivot {pivot_label} est déjà normalisée (pivot = 1)."
+        operation = f"Conserver la ligne pivot {pivot_label} telle quelle"
+    else:
+        formula = f"On divise la ligne pivot {pivot_label} par {p_str} pour obtenir 1 dans la colonne {entering_label}."
+        operation = f"Normaliser la ligne pivot {pivot_label}"
+    steps.append({
+        "formula": formula,
+        "operation": operation,
+        "kind": "normalize",
+        "row_label": pivot_label,
+        "new_row": [fmt(v) for v in new_pivot_row[:-1]] + [fmt(new_pivot_row[-1])],
+        "is_normalize": True,
+    })
+
+    # Étapes 2.. : élimination dans les autres lignes
+    for i in range(m + 1):
+        if i == leaving_row:
+            continue
+        factor = tableau[i][entering_col]
+        if factor == 0:
+            continue
+        row_label = "LF" if i == 0 else var_names[basis[i - 1]]
+        f_str = fmt(abs(factor))
+        sign = "-" if factor > 0 else "+"
+        pivot_row_label = f"la ligne pivot {pivot_label}"
+        if abs(factor) == 1:
+            formula = f"On annule {entering_label} dans {row_label} en faisant : {row_label} ← {row_label} {sign} {pivot_row_label}."
+        else:
+            formula = f"On annule {entering_label} dans {row_label} en faisant : {row_label} ← {row_label} {sign} {f_str} × {pivot_row_label}."
+        new_row = [
+            tableau[i][j] - factor * new_pivot_row[j]
+            for j in range(num_vars + 1)
+        ]
+        steps.append({
+            "formula": formula,
+            "operation": f"Éliminer {entering_label} dans {row_label}",
+            "kind": "eliminate",
+            "row_label": row_label,
+            "new_row": [fmt(v) for v in new_row[:-1]] + [fmt(new_row[-1])],
+            "is_normalize": False,
+        })
+
+    return steps
 
 
 def _snapshot(tableau, basis, var_names, m, n, entering_col, leaving_row, ratios, pivot_val=None):
