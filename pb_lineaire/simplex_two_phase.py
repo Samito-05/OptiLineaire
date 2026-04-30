@@ -26,7 +26,8 @@ def run_two_phase(c_input, A_input, b_input):
     b = [Fraction(x) for x in b_input]
 
     orig_vars  = [f"x{i+1}" for i in range(n)]
-    slack_vars = [f"s{i+1}" for i in range(m)]
+    # Utiliser 'y' pour les variables d'écart (au lieu de 's')
+    slack_vars = [f"y{i+1}" for i in range(m)]
 
     # Lignes nécessitant une variable artificielle (b_i < 0)
     needs_art  = [b[i] < Fraction(0) for i in range(m)]
@@ -47,17 +48,17 @@ def run_two_phase(c_input, A_input, b_input):
     for i in range(m):
         row = [Fraction(0)] * (num_all + 1)
         if not needs_art[i]:
-            # b_i >= 0 → contrainte standard : A_i x + s_i = b_i
+            # b_i >= 0 → contrainte standard : A_i x + y_i = b_i
             for j in range(n):
                 row[j] = A[i][j]
-            row[n + i]  = Fraction(1)    # slack s_{i+1}
+            row[n + i]  = Fraction(1)    # slack y_{i+1}
             row[-1]     = b[i]
-            basis.append(n + i)          # s_{i+1} en base
+            basis.append(n + i)          # y_{i+1} en base
         else:
-            # b_i < 0 → multiplier par −1 : −A_i x − s_i + a_j = −b_i
+            # b_i < 0 → multiplier par −1 : −A_i x − y_i + a_j = −b_i
             for j in range(n):
                 row[j] = -A[i][j]
-            row[n + i]             = Fraction(-1)   # surplus (coeff −1)
+            row[n + i]             = Fraction(-1)   # surplus (coeff −1) (y_{i+1})
             row[art_start + art_j] = Fraction(1)    # artificielle a_{j+1}
             row[-1]                = -b[i]           # RHS positif
             basis.append(art_start + art_j)          # a_{j+1} en base

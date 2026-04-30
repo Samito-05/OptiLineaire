@@ -36,7 +36,8 @@ def run_simplex(c_input, A_input, b_input):
             }
 
     orig_vars = [f"x{i+1}" for i in range(n)]
-    slack_vars = [f"s{i+1}" for i in range(m)]
+    # Utiliser 'y' pour les variables d'écart au lieu de 's'
+    slack_vars = [f"y{i+1}" for i in range(m)]
     var_names = orig_vars + slack_vars
     num_vars = n + m                          # colonnes hors RHS
 
@@ -45,10 +46,10 @@ def run_simplex(c_input, A_input, b_input):
     tableau = [lf_row]
     for i in range(m):
         row = A[i][:] + [Fraction(0)] * m + [b[i]]
-        row[n + i] = Fraction(1)              # variable d'écart s_{i+1}
+        row[n + i] = Fraction(1)              # variable d'écart y_{i+1}
         tableau.append(row)
 
-    basis = [n + i for i in range(m)]        # base initiale : slacks
+    basis = [n + i for i in range(m)]        # base initiale : variables d'écart (y)
 
     iterations = []
     result = _simplex_core(tableau, basis, var_names, m, num_vars, iterations)
