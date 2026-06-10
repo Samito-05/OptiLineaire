@@ -1,12 +1,17 @@
 {% extends "pb_lineaire/base.html" %}
 {% block title %}Saisie du problème — OptiLinéaire{% endblock %}
+{% block navbar_method %}Sélection automatique{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
   <div class="col-lg-9">
 
-    <h2 class="mb-1" id="pageTitle">Résolution — Détection automatique</h2>
-    <p class="text-muted mb-4" id="pageDesc">La méthode (Simplexe ou deux phases) sera choisie automatiquement selon la structure du problème.</p>
+    <h2 class="mb-1" id="pageTitle">Résolution</h2>
+    <p class="text-muted mb-4" id="pageDesc">
+      La méthode est choisie automatiquement : <strong>Simplexe</strong> si l'origine est admissible,
+      <strong>deux phases</strong> sinon. Pour un problème en <strong>variables entières</strong>,
+      choisissez entre <strong>coupes de Gomory</strong> et <strong>Branch-and-Bound</strong>.
+    </p>
 
     {% if error %}
     <div class="alert alert-danger">{{ error }}</div>
@@ -14,20 +19,13 @@
 
     <form method="post" action="{% url 'pb_lineaire:solve' %}" id="mainForm">
       {% csrf_token %}
+      <input type="hidden" name="method" value="auto">
 
       <!-- Paramètres généraux -->
       <div class="card mb-4 shadow-sm">
         <div class="card-header d-flex align-items-center justify-content-between">
           <span class="fw-bold">Paramètres</span>
-          <div class="d-flex align-items-center gap-2">
-            <input type="hidden" name="method" id="method" value="auto">
-            <div class="method-toggle" id="methodToggle" onclick="cycleMethod()" title="Cliquer pour changer de méthode">
-              <div class="method-track">
-                <div class="method-knob" id="methodKnob"></div>
-              </div>
-              <span class="method-label" id="methodLabel">Auto <span class="badge bg-secondary method-badge">Détection</span></span>
-            </div>
-          </div>
+          <span class="auto-chip" id="methodPreview">Méthode : automatique</span>
         </div>
         <div class="card-body row g-3">
           <div class="col-md-3">
@@ -55,6 +53,39 @@
           </div>
           <div class="col-md-3" style="align-self:flex-end">
             <button type="button" class="btn btn-secondary w-100" onclick="fillRandom()">Remplir aléatoire</button>
+          </div>
+
+          <!-- Variables entières -->
+          <div class="col-12">
+            <div class="integer-panel" id="integerPanel">
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" role="switch" id="integerSwitch" name="integer">
+                <label class="form-check-label fw-bold" for="integerSwitch">
+                  Variables entières &nbsp;<span class="text-muted fw-normal">(\(x_j \in \mathbb{Z}\) — programmation entière)</span>
+                </label>
+              </div>
+              <div class="integer-methods mt-3" id="integerMethods" hidden>
+                <div class="small text-muted mb-2">
+                  Deux méthodes du cours s'appliquent — ce choix vous appartient :
+                </div>
+                <div class="d-flex flex-column flex-md-row gap-2">
+                  <label class="int-method-option">
+                    <input type="radio" name="int_method" value="gomory" checked>
+                    <span class="int-method-option__body">
+                      <span class="int-method-option__title">Coupes de Gomory</span>
+                      <span class="int-method-option__desc">Relaxation LP + coupes successives dérivées du tableau optimal, jusqu'à une solution entière.</span>
+                    </span>
+                  </label>
+                  <label class="int-method-option">
+                    <input type="radio" name="int_method" value="bb">
+                    <span class="int-method-option__body">
+                      <span class="int-method-option__title">Branch-and-Bound</span>
+                      <span class="int-method-option__desc">Arbre d'exploration : branchement sur les variables fractionnaires, bornes et élagage.</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -144,70 +175,46 @@ function buildForm() {
 
 document.getElementById('obj_type').addEventListener('change', buildForm);
 
-// ── Toggle méthode (3 états : auto → simplex → two_phase → auto) ──
-const METHOD_STATES = [
-  {
-    value: 'auto',
-    cls: '',
-    label: 'Auto <span class="badge bg-secondary method-badge">Détection</span>',
-    navbar: 'Détection automatique',
-    title: 'Résolution — Détection automatique',
-    desc: 'La méthode (Simplexe ou deux phases) sera choisie automatiquement selon la structure du problème.',
-  },
-  {
-    value: 'simplex',
-    cls: 'active',
-    label: 'Simplexe',
-    navbar: 'Méthode du Simplexe',
-    title: 'Résolution par la méthode du Simplexe',
-    desc: 'Problème sous forme standard : <strong>max Z = \\(c^Tx\\)</strong> &nbsp;s.c.&nbsp; <strong>\\(Ax \\le b\\)</strong>, <strong>\\(x \\ge 0\\)</strong>',
-  },
-  {
-    value: 'two_phase',
-    cls: 'active active2',
-    label: 'Deux phases <span class="badge bg-primary method-badge">Phase&nbsp;1+2</span>',
-    navbar: 'Méthode des deux phases',
-    title: 'Résolution par la méthode des deux phases',
-    desc: 'Pour les problèmes avec contraintes &ge; ou membres droits négatifs, nécessitant une solution de base artificielle.',
-  },
-];
-let _methodIdx = 0;
+// ── Variables entières : afficher le choix Gomory / Branch-and-Bound ──
+const integerSwitch  = document.getElementById('integerSwitch');
+const integerMethods = document.getElementById('integerMethods');
+const methodPreview  = document.getElementById('methodPreview');
+const navbarText     = document.getElementById('navbarMethodText');
 
-function applyMethod(state) {
-  document.getElementById('methodToggle').className = 'method-toggle ' + state.cls;
-  document.getElementById('method').value           = state.value;
-  document.getElementById('methodLabel').innerHTML  = state.label;
-
-  const navbar = document.getElementById('navbarMethodText');
-  if (navbar) navbar.textContent = state.navbar;
-
-  document.getElementById('pageTitle').textContent = state.title;
-  const descEl = document.getElementById('pageDesc');
-  descEl.innerHTML = state.desc;
-  if (typeof MathJax !== 'undefined') MathJax.typesetPromise([descEl]).catch(console.log);
+function updateMethodPreview() {
+  if (integerSwitch.checked) {
+    integerMethods.hidden = false;
+    const chosen = document.querySelector('input[name="int_method"]:checked').value;
+    const label = chosen === 'bb' ? 'Branch-and-Bound' : 'Coupes de Gomory';
+    methodPreview.textContent = 'Méthode : ' + label;
+    if (navbarText) navbarText.textContent = label;
+  } else {
+    integerMethods.hidden = true;
+    methodPreview.textContent = 'Méthode : automatique';
+    if (navbarText) navbarText.textContent = 'Sélection automatique';
+  }
 }
 
-function cycleMethod() {
-  _methodIdx = (_methodIdx + 1) % METHOD_STATES.length;
-  applyMethod(METHOD_STATES[_methodIdx]);
-}
+integerSwitch.addEventListener('change', updateMethodPreview);
+document.querySelectorAll('input[name="int_method"]').forEach(r =>
+  r.addEventListener('change', updateMethodPreview));
 
 // Init au chargement
 buildForm();
-applyMethod(METHOD_STATES[0]);
+updateMethodPreview();
 
 // Fonction pour remplir aléatoirement
 function fillRandom() {
   const n = parseInt(document.getElementById('n_vars').value);
   const m = parseInt(document.getElementById('n_constraints').value);
-  
+
   // Remplir fonction objectif
   for (let i = 0; i < n; i++) {
     const value = Math.floor(Math.random() * 10) + 1; // 1-10
     const input = document.getElementById(`c_${i}`);
     if (input) input.value = value;
   }
-  
+
   // Remplir contraintes (A et b)
   for (let i = 0; i < m; i++) {
     for (let j = 0; j < n; j++) {

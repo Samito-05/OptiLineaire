@@ -1,0 +1,22 @@
+{% comment %}
+Affiche les itérations d'une relaxation LP résolue automatiquement :
+  • lp.method == "simplex"   → itérations directes
+  • lp.method == "two_phase" → Phase 1 (auxiliaire δ) puis Phase 2
+Paramètres : lp (résultat solveur), prefix (préfixe unique pour les collapses).
+{% endcomment %}
+{% if lp.method == "two_phase" %}
+  <div class="lp-phase-tag">Phase 1 — problème auxiliaire (artificielle δ, objectif max −δ)</div>
+  {% with result=lp.phase1 iter_prefix=prefix|add:"p1-" %}
+    {% include "pb_lineaire/_iterations.html" %}
+  {% endwith %}
+  {% if lp.phase2 %}
+  <div class="lp-phase-tag">Phase 2 — objectif original réexprimé (colonne δ supprimée)</div>
+  {% with result=lp.phase2 iter_prefix=prefix|add:"p2-" %}
+    {% include "pb_lineaire/_iterations.html" %}
+  {% endwith %}
+  {% endif %}
+{% else %}
+  {% with result=lp iter_prefix=prefix %}
+    {% include "pb_lineaire/_iterations.html" %}
+  {% endwith %}
+{% endif %}

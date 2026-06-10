@@ -9,30 +9,7 @@
   <a href="{% url 'pb_lineaire:index' %}" class="btn btn-outline-secondary">Nouveau problème</a>
 </div>
 
-<!-- Rappel du problème -->
-<div class="card mb-4 shadow-sm">
-  <div class="card-header fw-bold">Problème saisi</div>
-  <div class="card-body">
-    <p class="mb-1">
-      <strong>{{ obj_type|upper }} Z =</strong>
-      {% for ci in c_display %}
-        {{ ci }} · {{ forloop.counter|math_index:"x" }}{% if not forloop.last %} + {% endif %}
-      {% endfor %}
-    </p>
-    <p class="mb-1 mt-2"><strong>Sous contraintes :</strong></p>
-    <ul class="mb-0">
-      {% for row, op, bi in constraints %}
-      <li>
-        {% for aij in row %}
-          {{ aij }} · {{ forloop.counter|math_index:"x" }}{% if not forloop.last %} + {% endif %}
-        {% endfor %}
-        &nbsp;{{ op }}&nbsp; {{ bi }}
-      </li>
-      {% endfor %}
-    </ul>
-    <p class="text-muted mt-2 mb-0"><i>x</i><sub>j</sub> &ge; 0 pour tout j</p>
-  </div>
-</div>
+{% include "pb_lineaire/_problem.html" %}
 
 {% if result.status == "infeasible" %}
 <!-- ============================================================ INFAISABLE -->
@@ -49,7 +26,17 @@
 <div class="alert alert-danger small">
   La valeur optimale de Phase 1 est {{ result.phase1.optimal_value }} &ne; 0 — le problème n'admet aucune solution admissible.
 </div>
-{% with result=result.phase1 %}
+{% with result=result.phase1 iter_prefix="p1-" %}
+  {% include "pb_lineaire/_iterations.html" %}
+{% endwith %}
+
+{% elif result.status == "max_iter" and not result.phase2 %}
+<!-- ============================================================ MAX ITER PHASE 1 -->
+<div class="alert alert-warning mb-4">
+  <h5 class="alert-heading">Nombre maximal d'itérations atteint</h5>
+  {{ result.message }}
+</div>
+{% with result=result.phase1 iter_prefix="p1-" %}
   {% include "pb_lineaire/_iterations.html" %}
 {% endwith %}
 
@@ -67,11 +54,11 @@
 <div class="alert alert-info small mb-3">
   <strong>Objectif Phase 1 :</strong>
   minimiser la somme des variables artificielles
-  ({% for v in result.phase1.var_names %}{% if "a" in v %}{{ v }}{% if not forloop.last %} + {% endif %}{% endif %}{% endfor %}).
+  ({% for v in result.phase1.var_names %}{% if "δ" in v %}{{ v|math_var }}{% if not forloop.last %} + {% endif %}{% endif %}{% endfor %}).
   Si le minimum est 0, le problème est admissible et on passe en Phase 2.
 </div>
 
-{% with result=result.phase1 %}
+{% with result=result.phase1 iter_prefix="p1-" %}
   {% include "pb_lineaire/_iterations.html" %}
 {% endwith %}
 
@@ -98,13 +85,14 @@
   — résolu depuis la base admissible de Phase 1 (variables artificielles supprimées).
 </div>
 
-{% with result=result.phase2 %}
+{% with result=result.phase2 iter_prefix="p2-" %}
   {% include "pb_lineaire/_iterations.html" %}
 {% endwith %}
 
-{% if result.status == "unbounded" %}
+{% if result.status != "optimal" %}
 <div class="alert alert-warning mt-3">
-  <strong>Problème non borné</strong> — {{ result.message }}
+  <strong>{% if result.status == "unbounded" %}Problème non borné{% else %}Nombre maximal d'itérations atteint{% endif %}</strong>
+  — {{ result.message }}
 </div>
 {% else %}
 <!-- Solution finale -->
@@ -120,12 +108,5 @@
 
 {% endif %}{# end if infeasible #}
 
-<!-- Légende -->
-<div class="mt-4 d-flex flex-wrap gap-3 align-items-center small text-muted">
-  <strong>Légende :</strong>
-  <span><span style="background:#e8f4fd;border:1px solid #aaa;width:18px;height:18px;display:inline-block;vertical-align:middle"></span> Ligne LF</span>
-  <span><span style="background:#cfe2ff;border:1px solid #aaa;width:18px;height:18px;display:inline-block;vertical-align:middle"></span> Variable entrante</span>
-  <span><span style="background:#fff3cd;border:1px solid #aaa;width:18px;height:18px;display:inline-block;vertical-align:middle"></span> Variable sortante</span>
-  <span><span style="background:#dc3545;border:1px solid #aaa;width:18px;height:18px;display:inline-block;vertical-align:middle"></span> Pivot</span>
-</div>
+{% include "pb_lineaire/_legend.html" %}
 {% endblock %}

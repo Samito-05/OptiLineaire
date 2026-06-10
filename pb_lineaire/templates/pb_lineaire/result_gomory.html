@@ -1,0 +1,209 @@
+{% extends "pb_lineaire/base.html" %}
+{% load math_notation %}
+{% block title %}Coupes de Gomory — OptiLinéaire{% endblock %}
+{% block navbar_method %}Méthode des coupes (Gomory){% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0">Méthode des coupes de Gomory</h2>
+  <a href="{% url 'pb_lineaire:index' %}" class="btn btn-outline-secondary">Nouveau problème</a>
+</div>
+
+{% include "pb_lineaire/_problem.html" %}
+
+<!-- Résultat global -->
+{% if result.status == "optimal" %}
+<div class="alert alert-success mb-4">
+  <h5 class="alert-heading">Solution entière optimale trouvée</h5>
+  <strong>Z* = {{ result.optimal_value }}</strong>
+  &nbsp;&nbsp;
+  {% for var, val in result.solution.items %}
+    <span class="badge bg-success">{{ var|math_var }} = {{ val }}</span>
+  {% endfor %}
+  <div class="small mt-2 text-muted">
+    {{ result.n_cuts }} coupe{{ result.n_cuts|pluralize }} ajoutée{{ result.n_cuts|pluralize }}
+    avant d'atteindre une solution entière.
+  </div>
+</div>
+{% elif result.status == "infeasible" %}
+<div class="alert alert-danger mb-4">
+  <h5 class="alert-heading">Problème infaisable</h5>
+  {{ result.message }}
+</div>
+{% elif result.status == "unbounded" %}
+<div class="alert alert-warning mb-4">
+  <h5 class="alert-heading">Relaxation non bornée</h5>
+  {{ result.message }}
+</div>
+{% else %}
+<div class="alert alert-warning mb-4">
+  <h5 class="alert-heading">Arrêt sans solution entière</h5>
+  {{ result.message }}
+</div>
+{% endif %}
+
+<!-- Rappel de la procédure du cours -->
+<div class="method-recap mb-4">
+  <div class="method-recap__title">Procédure (cours — méthode des coupes)</div>
+  <ol class="method-recap__steps mb-0">
+    <li>Résoudre la <strong>relaxation linéaire</strong> continue par Simplexe (ou deux phases).</li>
+    <li>Solution <strong>entière</strong> → terminé.</li>
+    <li>Sinon, lire la ligne du tableau d'une variable de base fractionnaire : \(x_{B_i} + \sum_j a_{ij}\,t_j = b_i\).</li>
+    <li>Extraire les <strong>parties fractionnaires</strong> et construire la coupe \(\sum_j \{a_{ij}\}\,t_j \ge \{b_i\}\) — elle exclut la solution fractionnaire sans exclure d'entiers.</li>
+    <li><strong>Ajouter la coupe</strong> au modèle et re-résoudre la relaxation. Répéter.</li>
+  </ol>
+</div>
+
+{% for round in result.rounds %}
+<section class="cut-round mb-5">
+  <div class="cut-round__header">
+    <span class="cut-round__num">{% if round.number == 0 %}Relaxation initiale{% else %}Après la coupe {{ round.number }}{% endif %}</span>
+    <span class="badge {% if round.lp_method == 'two_phase' %}bg-info text-dark{% else %}bg-secondary{% endif %}">
+      Relaxation résolue par : {% if round.lp_method == "two_phase" %}deux phases (un \(b_i < 0\)){% else %}Simplexe direct{% endif %}
+    </span>
+  </div>
+
+  {% if round.lp_failed %}
+  <div class="alert alert-danger mt-3">
+    La relaxation LP a échoué ({{ round.lp.status }}) — voir les itérations ci-dessous.
+  </div>
+  <div class="mt-3">
+    {% with lp=round.lp prefix=round.prefix %}
+      {% include "pb_lineaire/_lp_block.html" %}
+    {% endwith %}
+  </div>
+  {% else %}
+
+  <!-- Solution de la relaxation -->
+  <div class="card mt-3 mb-3 shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span class="fw-bold">Étape 1 — Solution de la relaxation LP</span>
+      <button class="btn btn-sm btn-outline-secondary collapsed" type="button"
+              data-bs-toggle="collapse" data-bs-target="#lpIters-{{ round.prefix }}"
+              aria-expanded="false">
+        Itérations du Simplexe <span class="collapse-icon ms-2">▾</span>
+      </button>
+    </div>
+    <div class="card-body">
+      <p class="mb-2">
+        <strong>Z<sub>LP</sub> = {{ round.lp_value }}</strong> &nbsp;avec&nbsp;
+        {% for p in round.x_pairs %}
+          <span class="badge {% if p.frac %}bg-danger{% else %}bg-secondary{% endif %}">{{ p.var|math_var }} = {{ p.value }}</span>
+        {% endfor %}
+      </p>
+      {% if round.is_integer %}
+        <div class="alert alert-success py-2 px-3 mb-0 small">
+          <strong>Étape 2 — Test d'intégrité :</strong> toutes les variables sont entières → <strong>STOP, optimum entier atteint.</strong>
+        </div>
+      {% else %}
+        <div class="alert alert-light border py-2 px-3 mb-0 small">
+          <strong>Étape 2 — Test d'intégrité :</strong>
+          {% for p in round.x_pairs %}{% if p.frac %}{{ p.var|math_var }} = {{ p.value }} {% endif %}{% endfor %}
+          fractionnaire(s) → la solution n'est pas entière, on construit une coupe.
+        </div>
+      {% endif %}
+      <div class="collapse mt-3" id="lpIters-{{ round.prefix }}">
+        {% with lp=round.lp prefix=round.prefix %}
+          {% include "pb_lineaire/_lp_block.html" %}
+        {% endwith %}
+      </div>
+    </div>
+  </div>
+
+  {% if round.cut %}
+  <!-- Dérivation de la coupe -->
+  <div class="card cut-card shadow-sm">
+    <div class="card-header fw-bold">
+      Construction de la coupe de Gomory n° {{ round.number|add:1 }}
+    </div>
+    <div class="card-body">
+
+      <div class="cut-step">
+        <div class="cut-step__label">Étape 3 — Ligne source du tableau optimal</div>
+        <p class="small mb-1 text-muted">
+          Variable de base la plus fractionnaire : {{ round.cut.source_var|math_var }} = {{ round.cut.source_value }}.
+          On lit sa ligne dans le tableau optimal :
+        </p>
+        <div class="cut-formula">{{ round.cut.row_eq|math_text }}</div>
+      </div>
+
+      <div class="cut-step">
+        <div class="cut-step__label">Étape 4 — Parties fractionnaires \(\{a_{ij}\} = a_{ij} - \lfloor a_{ij} \rfloor\)</div>
+        <div class="table-responsive">
+          <table class="simplex-table frac-table">
+            <thead>
+              <tr>
+                <th>Terme</th>
+                <th>Coefficient \(a_{ij}\)</th>
+                <th>\(\lfloor a_{ij} \rfloor\)</th>
+                <th>Partie fractionnaire \(\{a_{ij}\}\)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for fr in round.cut.frac_rows %}
+              <tr>
+                <td>{{ fr.var|math_var }}</td>
+                <td>{{ fr.coef }}</td>
+                <td>{{ fr.floor }}</td>
+                <td class="frac-cell">{{ fr.frac }}</td>
+              </tr>
+              {% endfor %}
+              <tr class="frac-rhs">
+                <td>\(b_i\) (second membre)</td>
+                <td>{{ round.cut.rhs_coef }}</td>
+                <td>{{ round.cut.rhs_floor }}</td>
+                <td class="frac-cell">{{ round.cut.rhs_frac }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="cut-step">
+        <div class="cut-step__label">Étape 5 — Coupe en variables du tableau : \(\sum_j \{a_{ij}\}\,t_j \ge \{b_i\}\)</div>
+        <div class="cut-formula cut-formula--main">{{ round.cut.cut_tableau|math_text }}</div>
+        <p class="small text-muted mb-0">
+          Cette inégalité est violée par la solution fractionnaire courante (tous les \(t_j\) hors base valent 0,
+          or \(\{b_i\} = {{ round.cut.rhs_frac }} > 0\)), mais satisfaite par toute solution entière.
+        </p>
+      </div>
+
+      {% if round.cut.subst_lines %}
+      <div class="cut-step">
+        <div class="cut-step__label">Étape 6 — Substitution des variables d'écart</div>
+        <p class="small text-muted mb-1">Chaque écart est réexprimé depuis sa contrainte d'origine :</p>
+        {% for line in round.cut.subst_lines %}
+        <div class="cut-formula cut-formula--sub">{{ line|math_text }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="cut-step mb-0">
+        <div class="cut-step__label">Étape 7 — Coupe en variables originales, ajoutée au modèle</div>
+        <div class="cut-formula">{{ round.cut.cut_x|math_text }}</div>
+        {% if round.cut.scale %}
+        <p class="small text-muted mb-1">
+          Mise à l'échelle entière (× {{ round.cut.scale }}){% if round.cut.strengthened %},
+          puis arrondi du second membre \(\lceil {{ round.cut.rhs_scaled }} \rceil\)
+          (valide car le membre de gauche est entier pour tout \(x\) entier){% endif %} :
+        </p>
+        <div class="cut-formula">{{ round.cut.cut_scaled|math_text }}</div>
+        {% endif %}
+        <p class="small text-muted mb-1">soit, sous forme standard ≤ (multiplication par −1) :</p>
+        <div class="cut-formula cut-formula--added">{{ round.cut.cut_std|math_text }} &nbsp;<span class="badge bg-danger">ajoutée</span></div>
+        <p class="small text-muted mb-0 mt-1">
+          Le second membre \(b\) de la nouvelle contrainte est négatif → la prochaine
+          relaxation sera résolue par la méthode des deux phases.
+        </p>
+      </div>
+
+    </div>
+  </div>
+  {% endif %}
+
+  {% endif %}{# lp_failed #}
+</section>
+{% endfor %}
+
+{% include "pb_lineaire/_legend.html" %}
+{% endblock %}

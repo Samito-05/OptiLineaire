@@ -61,6 +61,13 @@ def run_simplex(c_input, A_input, b_input):
             "iterations": iterations,
         }
 
+    if result["status"] == "max_iter":
+        return {
+            "status": "max_iter",
+            "message": "Nombre maximal d'itérations atteint : cyclage possible.",
+            "iterations": iterations,
+        }
+
     z_star = -tableau[0][-1]
     solution = {name: "0" for name in orig_vars}
     for i, var_idx in enumerate(basis):
@@ -75,6 +82,17 @@ def run_simplex(c_input, A_input, b_input):
         "n": n,
         "m": m,
         "var_names": orig_vars,
+        # État final brut (Fractions) — utilisé par les méthodes entières
+        # (coupes de Gomory, Branch-and-Bound) pour lire le tableau optimal.
+        "final": {
+            "tableau": tableau,
+            "basis": basis,
+            "var_names": var_names,
+            "num_vars": num_vars,
+            "n": n,
+            "m": m,
+            "z": z_star,
+        },
     }
 
 

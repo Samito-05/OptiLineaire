@@ -1,0 +1,34 @@
+{% load math_notation %}
+{% if auto_reason %}
+<div class="auto-banner mb-4">
+  <span class="auto-banner__tag">Choix de méthode</span>
+  <span class="auto-banner__text">{{ auto_reason }}</span>
+</div>
+{% endif %}
+
+<!-- Rappel du problème -->
+<div class="card mb-4 shadow-sm">
+  <div class="card-header fw-bold">Problème saisi</div>
+  <div class="card-body">
+    <p class="mb-1">
+      <strong>{{ obj_type|upper }} Z =</strong>
+      {% for ci in c_display %}
+        {{ ci }} · {{ forloop.counter|math_index:"x" }}{% if not forloop.last %} + {% endif %}
+      {% endfor %}
+    </p>
+    <p class="mb-1 mt-2"><strong>Sous contraintes :</strong></p>
+    <ul class="mb-0">
+      {% for row, op, bi in constraints %}
+      <li>
+        {% for aij in row %}
+          {{ aij }} · {{ forloop.counter|math_index:"x" }}{% if not forloop.last %} + {% endif %}
+        {% endfor %}
+        &nbsp;{{ op }}&nbsp; {{ bi }}
+      </li>
+      {% endfor %}
+    </ul>
+    <p class="text-muted mt-2 mb-0">
+      \(x_j \ge 0\) pour tout j{% if method == "gomory" or method == "bb" %},&nbsp; \(x_j \in \mathbb{Z}\) (variables entières){% endif %}
+    </p>
+  </div>
+</div>
