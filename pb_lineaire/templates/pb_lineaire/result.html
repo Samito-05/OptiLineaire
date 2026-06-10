@@ -9,30 +9,7 @@
   <a href="{% url 'pb_lineaire:index' %}" class="btn btn-outline-secondary">Nouveau problème</a>
 </div>
 
-<!-- Rappel du problème -->
-<div class="card mb-4 shadow-sm">
-  <div class="card-header fw-bold">Problème saisi</div>
-  <div class="card-body">
-    <p class="mb-1">
-      <strong>{{ obj_type|upper }} Z =</strong>
-      {% for ci in c_display %}
-        {{ ci }} · {{ forloop.counter|math_index:"x" }}{% if not forloop.last %} + {% endif %}
-      {% endfor %}
-    </p>
-    <p class="mb-1 mt-2"><strong>Sous contraintes :</strong></p>
-    <ul class="mb-0">
-      {% for row, op, bi in constraints %}
-      <li>
-        {% for aij in row %}
-          {{ aij }} · {{ forloop.counter|math_index:"x" }}{% if not forloop.last %} + {% endif %}
-        {% endfor %}
-        &nbsp;{{ op }}&nbsp; {{ bi }}
-      </li>
-      {% endfor %}
-    </ul>
-    <p class="text-muted mt-2 mb-0">\(x_j\) &ge; 0 pour tout j</p>
-  </div>
-</div>
+{% include "pb_lineaire/_problem.html" %}
 
 {% if result.status == "non_admissible" %}
 <div class="alert alert-danger">
@@ -43,6 +20,13 @@
 {% elif result.status == "unbounded" %}
 <div class="alert alert-warning">
   <strong>Problème non borné</strong><br>
+  {{ result.message }}
+</div>
+{% include "pb_lineaire/_iterations.html" %}
+
+{% elif result.status == "max_iter" %}
+<div class="alert alert-warning">
+  <strong>Nombre maximal d'itérations atteint</strong><br>
   {{ result.message }}
 </div>
 {% include "pb_lineaire/_iterations.html" %}
@@ -59,12 +43,5 @@
 {% include "pb_lineaire/_iterations.html" %}
 {% endif %}
 
-<!-- Légende -->
-<div class="mt-4 d-flex flex-wrap gap-3 align-items-center small text-muted">
-  <strong>Légende :</strong>
-  <span><span class="legend-box" style="background:#e8f4fd;border:1px solid #aaa;width:18px;height:18px;display:inline-block;vertical-align:middle"></span> Ligne LF</span>
-  <span><span class="legend-box" style="background:#cfe2ff;border:1px solid #aaa;width:18px;height:18px;display:inline-block;vertical-align:middle"></span> Variable entrante</span>
-  <span><span class="legend-box" style="background:#fff3cd;border:1px solid #aaa;width:18px;height:18px;display:inline-block;vertical-align:middle"></span> Variable sortante</span>
-  <span><span class="legend-box" style="background:#dc3545;border:1px solid #aaa;width:18px;height:18px;display:inline-block;vertical-align:middle"></span> Pivot</span>
-</div>
+{% include "pb_lineaire/_legend.html" %}
 {% endblock %}

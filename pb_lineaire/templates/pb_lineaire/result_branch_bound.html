@@ -1,0 +1,139 @@
+{% extends "pb_lineaire/base.html" %}
+{% load math_notation %}
+{% block title %}Branch-and-Bound — OptiLinéaire{% endblock %}
+{% block navbar_method %}Branch-and-Bound{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0">Branch-and-Bound</h2>
+  <a href="{% url 'pb_lineaire:index' %}" class="btn btn-outline-secondary">Nouveau problème</a>
+</div>
+
+{% include "pb_lineaire/_problem.html" %}
+
+<!-- Résultat global -->
+{% if result.status == "optimal" %}
+<div class="alert alert-success mb-4">
+  <h5 class="alert-heading">Solution entière optimale trouvée</h5>
+  <strong>Z* = {{ result.optimal_value }}</strong>
+  &nbsp;&nbsp;
+  {% for var, val in result.solution.items %}
+    <span class="badge bg-success">{{ var|math_var }} = {{ val }}</span>
+  {% endfor %}
+  <div class="small mt-2 text-muted">
+    {{ result.n_nodes }} nœud{{ result.n_nodes|pluralize:"s" }} exploré{{ result.n_nodes|pluralize:"s" }} —
+    incumbent final trouvé au nœud N{{ result.incumbent_node }}.
+  </div>
+</div>
+{% elif result.status == "infeasible" %}
+<div class="alert alert-danger mb-4">
+  <h5 class="alert-heading">Problème entier infaisable</h5>
+  {{ result.message }}
+</div>
+{% elif result.status == "unbounded" %}
+<div class="alert alert-warning mb-4">
+  <h5 class="alert-heading">Problème non borné</h5>
+  {{ result.message }}
+</div>
+{% else %}
+<div class="alert alert-warning mb-4">
+  <h5 class="alert-heading">Exploration interrompue</h5>
+  {{ result.message }}
+  {% if result.optimal_value %}
+  <div class="mt-2">
+    <strong>Incumbent : Z = {{ result.optimal_value }}</strong>
+    {% for var, val in result.solution.items %}
+      <span class="badge bg-success">{{ var|math_var }} = {{ val }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- Rappel de la procédure du cours -->
+<div class="method-recap mb-4">
+  <div class="method-recap__title">Procédure (cours — Branch-and-Bound)</div>
+  <ol class="method-recap__steps mb-0">
+    <li>Résoudre la <strong>relaxation LP</strong> du nœud courant (Simplexe / deux phases).</li>
+    <li>Relaxation <strong>infaisable</strong> → élaguer le nœud.</li>
+    <li><strong>Borne ≤ incumbent</strong> → élaguer (aucune amélioration possible).</li>
+    <li>Solution <strong>entière</strong> → mettre à jour l'incumbent, élaguer.</li>
+    <li>Sinon <strong>brancher</strong> sur une variable fractionnaire \(x_j\) : fils \(x_j \le \lfloor x^*_j \rfloor\) et \(x_j \ge \lceil x^*_j \rceil\).</li>
+    <li>Sélection du nœud suivant : <strong>meilleure borne</strong> (best-bound). Terminer quand la file est vide.</li>
+  </ol>
+</div>
+
+<!-- Arbre d'exploration -->
+<div class="card mb-4 shadow-sm">
+  <div class="card-header fw-bold">Arbre d'exploration</div>
+  <div class="card-body bb-tree-wrap">
+    <ul class="bb-tree">
+      {% include "pb_lineaire/_bb_node.html" with node=result.tree %}
+    </ul>
+    <div class="d-flex flex-wrap gap-3 small text-muted mt-3 bb-tree-legend">
+      <span><span class="bb-dot"></span> branché</span>
+      <span><span class="bb-dot bb-dot--integer"></span> solution entière</span>
+      <span><span class="bb-dot bb-dot--pruned"></span> élagué / infaisable</span>
+      <span><span class="bb-dot bb-dot--unexplored"></span> non exploré</span>
+    </div>
+  </div>
+</div>
+
+<!-- Détail des nœuds dans l'ordre d'exploration -->
+<h4 class="mb-3">Détail des nœuds (ordre d'exploration best-bound)</h4>
+
+{% for node in result.nodes_list %}
+<div class="card mb-3 shadow-sm bb-detail bb-detail--{{ node.status }}">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span class="fw-bold">
+      Nœud N{{ node.id }}
+      {% if node.id == 0 %}(racine — problème original)
+      {% else %}— contrainte ajoutée : {{ node.branch_label|math_text }}{% endif %}
+    </span>
+    <span>
+      {% if node.status == "branched" %}<span class="badge bg-primary">branché</span>
+      {% elif node.status == "integer" %}<span class="badge bg-success">solution entière{% if node.is_incumbent_update %} — incumbent{% endif %}</span>
+      {% elif node.status == "pruned" %}<span class="badge bg-warning text-dark">élagué par borne</span>
+      {% elif node.status == "infeasible" %}<span class="badge bg-danger">infaisable</span>
+      {% elif node.status == "unbounded" %}<span class="badge bg-danger">non borné</span>
+      {% elif node.status == "error" %}<span class="badge bg-danger">échec LP</span>
+      {% endif %}
+      {% if node.lp %}
+      <button class="btn btn-sm btn-outline-secondary collapsed ms-2" type="button"
+              data-bs-toggle="collapse" data-bs-target="#bbIters-{{ node.id }}" aria-expanded="false">
+        Relaxation LP <span class="collapse-icon ms-1">▾</span>
+      </button>
+      {% endif %}
+    </span>
+  </div>
+  <div class="card-body">
+    {% if node.extra %}
+    <p class="small text-muted mb-2">
+      <strong>Sous-problème :</strong> problème original +
+      {% for row, rhs, label in node.extra %}{{ label|math_text }}{% if not forloop.last %}, {% endif %}{% endfor %}
+    </p>
+    {% endif %}
+    {% if node.x_pairs %}
+    <p class="mb-2">
+      <strong>Relaxation LP :</strong> Z<sub>LP</sub> = {{ node.bound_display }}
+      ({% if node.lp_method == "two_phase" %}deux phases{% else %}Simplexe{% endif %}) &nbsp;
+      {% for p in node.x_pairs %}
+        <span class="badge {% if p.frac %}bg-danger{% else %}bg-secondary{% endif %}">{{ p.var|math_var }} = {{ p.value }}</span>
+      {% endfor %}
+    </p>
+    {% endif %}
+    <p class="mb-0 small">{{ node.reason|math_text }}</p>
+
+    {% if node.lp %}
+    <div class="collapse mt-3" id="bbIters-{{ node.id }}">
+      {% with lp=node.lp prefix=node.prefix %}
+        {% include "pb_lineaire/_lp_block.html" %}
+      {% endwith %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+
+{% include "pb_lineaire/_legend.html" %}
+{% endblock %}

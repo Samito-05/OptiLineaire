@@ -1,66 +1,137 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   OptiLinéaire — Style typographique international (suisse)
+   Papier cassé · noir d'encre · rouge suisse · hairlines · coins droits
+   Bricolage Grotesque (titres) · Archivo (texte) · Space Mono (tableaux)
+   ═══════════════════════════════════════════════════════════════════════ */
+
 :root {
   color-scheme: light;
-  --bg: #f7f8fc;
-  --surface: #ffffff;
-  --surface-2: #eef2f7;
-  --text: #16202c;
-  --muted: #5b6777;
-  --border: #d7dde6;
-  --navbar-bg: #111827;
-  --navbar-text: #f8fafc;
-  --table-head-bg: #243447;
-  --table-head-text: #ffffff;
-  --color-lf: #e8f4fd;
-  --color-entering: #cfe2ff;
-  --color-leaving: #fff3cd;
-  --color-pivot: #dc3545;
-  --card-shadow: 0 0.5rem 1.5rem rgba(16, 24, 40, 0.08);
-  --input-bg: #ffffff;
-  --input-text: #16202c;
-  --input-border: #cdd6e1;
+
+  --bg: #efece3;
+  --surface: #fbfaf5;
+  --surface-2: #e7e3d6;
+  --text: #14110d;
+  --muted: #6f6a5d;
+  --border: #14110d;
+  --hairline: #c9c3b2;
+
+  --red: #e2342a;
+  --blue: #1f4fd8;
+  --yellow: #f2c200;
+
+  --navbar-bg: #14110d;
+  --navbar-text: #fbfaf5;
+  --table-head-bg: #14110d;
+  --table-head-text: #fbfaf5;
+
+  --color-lf: #e7e3d6;
+  --color-entering: #d3def7;
+  --color-leaving: #fbeeb2;
+  --color-pivot: #f6c7c3;
+  --color-pivot-text: #9c1b14;
+
+  --input-bg: #fbfaf5;
+  --input-text: #14110d;
+
+  --font-display: "Bricolage Grotesque", Georgia, serif;
+  --font-body: "Archivo", system-ui, sans-serif;
+  --font-mono: "Space Mono", "Courier New", monospace;
 }
 
 html[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0f172a;
-  --surface: #111827;
-  --surface-2: #1f2937;
-  --text: #e5e7eb;
-  --muted: #94a3b8;
-  --border: #334155;
-  --navbar-bg: #050816;
-  --navbar-text: #f8fafc;
-  --table-head-bg: #0b1220;
-  --table-head-text: #f8fafc;
-  --color-lf: rgba(59, 130, 246, 0.16);
-  --color-entering: rgba(96, 165, 250, 0.24);
-  --color-leaving: rgba(245, 158, 11, 0.18);
-  --color-pivot: #f43f5e;
-  --card-shadow: 0 0.8rem 2rem rgba(0, 0, 0, 0.35);
-  --input-bg: #0b1220;
-  --input-text: #e5e7eb;
-  --input-border: #334155;
+
+  --bg: #14130f;
+  --surface: #1c1b16;
+  --surface-2: #26241d;
+  --text: #f0ede3;
+  --muted: #a39d8c;
+  --border: #f0ede3;
+  --hairline: #3a382f;
+
+  --red: #ff5a4d;
+  --blue: #7d9bf2;
+  --yellow: #f2c200;
+
+  --navbar-bg: #0c0b08;
+  --navbar-text: #f0ede3;
+  --table-head-bg: #0c0b08;
+  --table-head-text: #f0ede3;
+
+  --color-lf: #26241d;
+  --color-entering: rgba(125, 155, 242, 0.22);
+  --color-leaving: rgba(242, 194, 0, 0.20);
+  --color-pivot: rgba(255, 90, 77, 0.26);
+  --color-pivot-text: #ff8a80;
+
+  --input-bg: #14130f;
+  --input-text: #f0ede3;
 }
 
 body {
   background: var(--bg);
   color: var(--text);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
 
-.navbar-brand {
-  font-weight: 700;
-  letter-spacing: 1px;
+/* Le contenu mathématique (MathJax) ne doit jamais être mis en majuscules
+   par les text-transform des badges/boutons/en-têtes (sinon δ → Δ, x → X). */
+mjx-container, .MathJax {
+  text-transform: none !important;
 }
 
+/* ── Typographie : grosse, confiante, serrée ── */
+h1, h2, h3, h4, h5, .navbar-brand, .alert-heading {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.02;
+}
+h2 { font-size: 2.4rem; text-transform: uppercase; }
+h4 { font-size: 1.35rem; }
+
+/* ── Barre de navigation : bandeau noir plein ── */
 .navbar {
   background: var(--navbar-bg) !important;
+  border-bottom: 2px solid var(--border);
 }
-
-.navbar .navbar-text,
-.navbar .navbar-brand {
+.navbar-brand {
+  font-weight: 800;
+  font-size: 1.45rem;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+.navbar .navbar-brand { color: var(--navbar-text) !important; }
+.navbar .navbar-text {
   color: var(--navbar-text) !important;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  opacity: 0.75;
 }
 
+.theme-toggle {
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 0.7rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--navbar-text) !important;
+  border: 1px solid var(--navbar-text) !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  padding: 0.35rem 0.75rem !important;
+  transition: background 0.15s, color 0.15s;
+}
+.theme-toggle:hover {
+  background: var(--navbar-text) !important;
+  color: var(--navbar-bg) !important;
+}
+
+/* ── Cartes : blocs nets, bordés, sans ombre ── */
 .card,
 .alert,
 .dropdown-menu,
@@ -70,168 +141,226 @@ body {
 .form-select {
   background-color: var(--surface);
   color: var(--text);
-  border-color: var(--border);
+  border-color: var(--hairline);
 }
-
-.card,
-.alert,
-.dropdown-menu {
-  box-shadow: var(--card-shadow);
+.card {
+  border: 1.5px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
 }
-
 .card-header {
-  background: var(--surface-2);
-  border-color: var(--border);
+  background: transparent;
+  border-bottom: 1.5px solid var(--border);
   color: var(--text);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
 }
 
+/* ── Alertes : encadrés plats, sans filet de couleur ── */
+.alert {
+  border-radius: 0;
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: none;
+}
+.alert-success { border: 1.5px solid var(--border); }
+.alert-danger  { border-color: var(--red); }
+.alert-warning { border-color: var(--hairline); }
+.alert-info,
+.alert-secondary { border-color: var(--hairline); }
 .alert-light {
   background-color: var(--surface-2) !important;
   color: var(--text) !important;
-  border-color: var(--border) !important;
+  border: 1px solid var(--hairline) !important;
+}
+.alert-heading { color: inherit; }
+
+/* ── Badges : étiquettes mono carrées ── */
+.badge {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-radius: 0;
+  padding: 0.35em 0.55em;
+  border: 1px solid transparent;
+}
+.badge.bg-success   { background-color: var(--text) !important; color: var(--surface) !important; }
+.badge.bg-danger    { background-color: transparent !important; color: var(--red) !important; border-color: var(--red); }
+.badge.bg-warning   { background-color: transparent !important; color: var(--text) !important; border-color: var(--border); }
+.badge.bg-primary   { background-color: transparent !important; color: var(--text) !important; border-color: var(--border); }
+.badge.bg-info      { background-color: transparent !important; color: var(--muted) !important; border-color: var(--muted); }
+.badge.bg-secondary { background-color: transparent !important; color: var(--muted) !important; border-color: var(--muted); }
+
+/* ── Boutons : rectangulaires, mono, pleins ── */
+.btn {
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+}
+.btn:active { transform: translateY(1px); }
+.btn-primary {
+  background: var(--text);
+  border: 1.5px solid var(--text);
+  color: var(--surface);
+}
+.btn-primary:hover, .btn-primary:focus {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+.btn-secondary {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--text);
+}
+.btn-secondary:hover {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--surface);
+}
+.btn-outline-secondary {
+  color: var(--text);
+  border: 1.5px solid var(--border);
+}
+.btn-outline-secondary:hover {
+  background: var(--text);
+  color: var(--surface);
+  border-color: var(--text);
 }
 
-.text-muted {
-  color: var(--muted) !important;
-}
+.text-muted { color: var(--muted) !important; }
+.bg-light { background-color: var(--surface-2) !important; }
+.border { border-color: var(--hairline) !important; }
+.shadow-sm { box-shadow: none !important; }
 
-.bg-light {
-  background-color: var(--surface-2) !important;
-}
-
-.border {
-  border-color: var(--border) !important;
-}
-
-.table {
-  --bs-table-bg: var(--surface);
-  --bs-table-color: var(--text);
-}
-
+/* ── Tables Bootstrap génériques ── */
+.table { --bs-table-bg: var(--surface); --bs-table-color: var(--text); }
 .table > :not(caption) > * > * {
   background-color: var(--surface);
   color: var(--text);
-  border-color: var(--border);
+  border-color: var(--hairline);
 }
-
-.table-dark {
+.table-dark { background: var(--table-head-bg) !important; color: var(--table-head-text) !important; }
+.table-dark th {
   background: var(--table-head-bg) !important;
   color: var(--table-head-text) !important;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
 }
 
+/* ── Tableau du simplexe : grille nette ── */
 .simplex-table {
-  font-size: .9rem;
+  font-size: 0.92rem;
   border-collapse: collapse;
+  font-family: var(--font-mono);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
 }
-
 .simplex-table th,
 .simplex-table td {
-  border: 1px solid var(--border);
-  padding: 6px 12px;
+  border: 1px solid var(--hairline);
+  padding: 8px 14px;
   text-align: center;
   vertical-align: middle;
+  font-variant-numeric: tabular-nums;
 }
-
 .simplex-table th {
   background: var(--table-head-bg);
   color: var(--table-head-text);
+  font-weight: 700;
+  font-size: 0.8rem;
+  border-color: var(--text);
 }
 
 .label-col {
   font-weight: 700;
-  background: var(--table-head-bg) !important;
-  color: var(--table-head-text);
+  background: var(--surface-2) !important;
+  color: var(--text) !important;
 }
 
 .row-lf > td,
 .row-lf > th {
   background: var(--color-lf) !important;
-  font-weight: 600;
+  font-weight: 700;
 }
-
 .row-lf .label-col,
 .row-lf .ratio-col {
   background: var(--color-lf) !important;
   color: var(--text) !important;
 }
+.col-entering { background: var(--color-entering) !important; }
+.row-leaving  { background: var(--color-leaving) !important; }
 
-.col-entering {
-  background: var(--color-entering) !important;
-}
-
-.row-leaving {
-  background: var(--color-leaving) !important;
-}
-
+/* Pivot : case rouge clair, texte rouge foncé, gras */
 .cell-pivot {
   background: var(--color-pivot) !important;
-  color: #fff !important;
+  color: var(--color-pivot-text) !important;
   font-weight: 700;
-  border-radius: 3px;
-}
-
-.iteration-card {
-  border-left: 4px solid #60a5fa;
 }
 
 .pivot-step-card {
   background: var(--surface);
+  border-radius: 0 !important;
 }
-
 .ratio-col {
   color: var(--muted);
   font-style: italic;
   min-width: 80px;
 }
 
+/* ── Légende ── */
 .legend-box {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   display: inline-block;
   border: 1px solid var(--border);
+  border-radius: 0;
   vertical-align: middle;
 }
+.legend-box--lf       { background: var(--color-lf); }
+.legend-box--entering { background: var(--color-entering); }
+.legend-box--leaving  { background: var(--color-leaving); }
+.legend-box--pivot    { background: var(--color-pivot); }
 
-.legend-box--lf {
-  background: var(--color-lf);
-}
-
-.legend-box--entering {
-  background: var(--color-entering);
-}
-
-.legend-box--leaving {
-  background: var(--color-leaving);
-}
-
-.legend-box--pivot {
-  background: var(--color-pivot);
-}
-
-.btn-outline-secondary {
-  color: var(--text);
-  border-color: var(--border);
-}
-
-.btn-outline-secondary:hover {
-  background: var(--surface-2);
-  color: var(--text);
-  border-color: var(--border);
-}
-
+/* ── Formulaires ── */
 .form-control,
 .form-select {
   background-color: var(--input-bg);
   color: var(--input-text);
-  border-color: var(--input-border);
+  border: 1.5px solid var(--border);
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-
 .form-control:focus,
 .form-select:focus {
   background-color: var(--input-bg);
   color: var(--input-text);
-  border-color: #60a5fa;
-  box-shadow: 0 0 0 0.2rem rgba(96, 165, 250, 0.2);
+  border-color: var(--text);
+  box-shadow: none;
+}
+.form-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
 }
 
 .modal-content,
@@ -242,52 +371,307 @@ body {
   border-color: var(--border);
 }
 
-.theme-toggle {
-  white-space: nowrap;
-}
+.formula-text { font-family: var(--font-mono); }
+.pivot-step-table { font-size: 0.82rem; }
+.pivot-step-label-col { min-width: 120px; }
+.input-width-coef { width: 80px; }
+.input-width-constraint-coef { width: 75px; }
+.input-width-constraint-b { width: 80px; }
 
-.formula-text {
-  font-family: monospace;
-}
-
-.pivot-step-table {
-  font-size: .82rem;
-}
-
-.pivot-step-label-col {
-  min-width: 120px;
-}
-
-.input-width-coef {
-  width: 80px;
-}
-
-.input-width-constraint-coef {
-  width: 75px;
-}
-
-.input-width-constraint-b {
-  width: 80px;
-}
-
-/* Collapse icon rotation */
+/* ── Icône de repli ── */
 .collapse-icon {
   display: inline-block;
-  transition: transform .22s ease;
+  transition: transform 0.22s ease;
   transform-origin: 50% 50%;
-  transform: rotate(0deg);
 }
-.btn:not(.collapsed) .collapse-icon {
-  transform: rotate(180deg);
-}
+.btn:not(.collapsed) .collapse-icon { transform: rotate(180deg); }
 
-/* Styles pour les sélecteurs déroulants */
 select.form-select-sm {
   padding: 0.32rem 0.65rem;
   font-size: 0.875rem;
-  border-radius: 12px;
+  border-radius: 0;
 }
 
-.form-select-sm option {
-  padding: 0.4rem;
+/* ═══════════════════════════════════════════════════════════════════════
+   Sélection automatique de méthode
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Chip "Méthode : …" dans l'en-tête des paramètres */
+.auto-chip {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 4px 10px;
+  border: 1.5px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  white-space: nowrap;
 }
+
+/* Bandeau "Choix de méthode" sur les pages de résultats */
+.auto-banner {
+  display: flex;
+  align-items: stretch;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+}
+.auto-banner__tag {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  background: var(--border);
+  color: var(--surface);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.auto-banner__text {
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  align-self: center;
+}
+
+/* ── Panneau variables entières (formulaire) ── */
+.integer-panel {
+  border-top: 1px solid var(--hairline);
+  padding-top: 14px;
+}
+.int-method-option {
+  flex: 1;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border: 1.5px solid var(--hairline);
+  padding: 12px 14px;
+  cursor: pointer;
+  background: var(--surface);
+  transition: border-color 0.15s ease, background 0.15s ease;
+  margin-bottom: 0;
+}
+.int-method-option:hover { border-color: var(--border); }
+.int-method-option:has(input:checked) {
+  border: 1.5px solid var(--border);
+  background: var(--surface-2);
+}
+.int-method-option input { margin-top: 3px; accent-color: var(--text); }
+.int-method-option__body  { display: flex; flex-direction: column; gap: 2px; }
+.int-method-option__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.98rem;
+}
+.int-method-option__desc { font-size: 0.78rem; color: var(--muted); }
+
+/* ── Rappel de procédure (encadré cours) ── */
+.method-recap {
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  padding: 14px 18px;
+}
+.method-recap__title {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.method-recap__steps { padding-left: 1.2rem; }
+.method-recap__steps li { font-size: 0.88rem; margin-bottom: 3px; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Coupes de Gomory
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.cut-round__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 6px;
+}
+.cut-round__num {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.3rem;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+}
+
+.cut-step {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.cut-step:last-child, .cut-step.mb-0 { border-bottom: none; }
+.cut-step__label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.cut-formula {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  padding: 8px 12px;
+  display: inline-block;
+  margin-bottom: 4px;
+}
+.cut-formula--main {
+  border: 1.5px solid var(--border);
+  font-weight: 700;
+}
+.cut-formula--added { border: 1.5px solid var(--border); }
+.cut-formula--sub { display: block; margin-bottom: 6px; }
+
+.frac-table .frac-cell {
+  background: var(--color-pivot);
+  color: var(--color-pivot-text);
+  font-weight: 700;
+}
+.frac-table .frac-rhs td { border-top: 2px solid var(--border); }
+
+/* ── Tag de phase dans un bloc LP imbriqué ── */
+.lp-phase-tag {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--hairline);
+  margin: 14px 0 10px;
+  padding-bottom: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Branch-and-Bound — arbre d'exploration
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.bb-tree-wrap { overflow-x: auto; }
+
+.bb-tree, .bb-tree ul {
+  display: flex;
+  justify-content: center;
+  list-style: none;
+  margin: 0;
+  padding-top: 18px;
+  position: relative;
+}
+.bb-tree { padding-left: 0; padding-top: 0; }
+
+.bb-tree li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 10px;
+  position: relative;
+}
+
+/* Connecteurs : trait vertical au-dessus de chaque nœud (sauf racine) */
+.bb-tree ul li::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1.5px;
+  height: 18px;
+  background: var(--border);
+}
+/* Trait horizontal reliant les fils */
+.bb-tree ul li::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: var(--border);
+}
+.bb-tree ul li:first-child::after { left: 50%; }
+.bb-tree ul li:last-child::after  { right: 50%; }
+.bb-tree ul li:only-child::after  { display: none; }
+
+/* Trait vertical sous un nœud branché */
+.bb-tree li > ul::before {
+  content: "";
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  width: 1.5px;
+  height: 18px;
+  background: var(--border);
+}
+
+.bb-node {
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  min-width: 130px;
+  text-align: center;
+  padding: 8px 10px;
+  position: relative;
+  z-index: 1;
+}
+.bb-node__head {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 8px;
+}
+.bb-node__id {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+.bb-node__branch {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+.bb-node__bound {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.05rem;
+  margin-top: 2px;
+}
+.bb-node__status {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+/* Statuts différenciés par le trait, pas par la couleur */
+.bb-node--integer    { border-width: 2.5px; }
+.bb-node--integer .bb-node__status { color: var(--text); font-weight: 700; }
+.bb-node--pruned     { border-style: dashed; border-color: var(--hairline); opacity: 0.8; }
+.bb-node--infeasible,
+.bb-node--unbounded  { border-style: dashed; border-color: var(--hairline); opacity: 0.8; }
+.bb-node--unexplored { border-style: dotted; border-color: var(--hairline); opacity: 0.6; }
+
+/* Légende de l'arbre */
+.bb-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid var(--border);
+  vertical-align: -1px;
+  margin-right: 4px;
+}
+.bb-dot--integer    { border-width: 2.5px; }
+.bb-dot--pruned     { border-style: dashed; border-color: var(--hairline); }
+.bb-dot--infeasible { border-style: dashed; border-color: var(--hairline); }
+.bb-dot--unexplored { border-style: dotted; border-color: var(--hairline); }
