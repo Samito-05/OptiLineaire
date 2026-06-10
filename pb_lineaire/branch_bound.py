@@ -1,5 +1,5 @@
 """
-Branch-and-Bound — cf. doc/branch_and_bound.md.
+Branch-and-Bound.
 
 Résout  max Z = c^T x   s.c.  A x ≤ b,  x ≥ 0,  x entier
 par énumération intelligente d'un arbre d'exploration.
