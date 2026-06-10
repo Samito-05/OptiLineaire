@@ -1,5 +1,5 @@
 """
-Méthode des coupes de Gomory (Cutting Planes) — cf. doc/coupes.md.
+Méthode des coupes de Gomory (Cutting Planes).
 
 Résout  max Z = c^T x   s.c.  A x ≤ b,  x ≥ 0,  x entier.
 
