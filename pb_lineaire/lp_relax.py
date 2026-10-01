@@ -14,17 +14,26 @@ from .simplex import run_simplex
 from .simplex_two_phase import run_two_phase
 
 
-def solve_lp_auto(c, A, b):
+def solve_lp_auto(c, A, b, budget=None):
     """
     Résout  max c^T x   s.c.  A x ≤ b,  x ≥ 0  en choisissant la méthode.
-    Retourne le résultat du solveur, enrichi de la clé "method".
+    Retourne le résultat du solveur, enrichi de la clé "method" et, si un
+    `budget` de détails est fourni, du nombre d'itérations dont l'affichage
+    a été réduit ("omitted_steps") ou supprimé ("omitted_tableaux").
     """
+    steps_before = budget.omitted_steps if budget else 0
+    tableaux_before = budget.omitted_tableaux if budget else 0
+
     if all(Fraction(bi) >= 0 for bi in b):
-        result = run_simplex(c, A, b)
+        result = run_simplex(c, A, b, budget=budget)
         result["method"] = "simplex"
     else:
-        result = run_two_phase(c, A, b)
+        result = run_two_phase(c, A, b, budget=budget)
         result["method"] = "two_phase"
+
+    if budget:
+        result["omitted_steps"] = budget.omitted_steps - steps_before
+        result["omitted_tableaux"] = budget.omitted_tableaux - tableaux_before
     return result
 
 

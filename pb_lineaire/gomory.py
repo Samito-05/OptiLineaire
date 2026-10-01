@@ -23,7 +23,7 @@ Arithmétique exacte (fractions.Fraction) comme recommandé dans le cours.
 import math
 from fractions import Fraction
 
-from .simplex import fmt
+from .simplex import fmt, DetailBudget
 from .lp_relax import solve_lp_auto, extract_x
 
 MAX_CUTS = 15
@@ -62,8 +62,9 @@ def _is_integer(v):
 # Point d'entrée public
 # ---------------------------------------------------------------------------
 
-def run_gomory(c_input, A_input, b_input, minimize=False, max_cuts=MAX_CUTS):
+def run_gomory(c_input, A_input, b_input, minimize=False, max_cuts=MAX_CUTS, budget=None):
     n = len(c_input)
+    budget = budget or DetailBudget()
     c = [Fraction(v) for v in c_input]
     A_cur = [[Fraction(v) for v in row] for row in A_input]
     b_cur = [Fraction(v) for v in b_input]
@@ -81,7 +82,7 @@ def run_gomory(c_input, A_input, b_input, minimize=False, max_cuts=MAX_CUTS):
 
     for k in range(max_cuts + 1):
         # --- Étape 1 : relaxation LP (méthode choisie automatiquement) ---
-        lp = solve_lp_auto(c, A_cur, b_cur)
+        lp = solve_lp_auto(c, A_cur, b_cur, budget=budget)
 
         if lp["status"] != "optimal":
             status = lp["status"]
@@ -146,8 +147,8 @@ def run_gomory(c_input, A_input, b_input, minimize=False, max_cuts=MAX_CUTS):
                 "status": "max_cuts",
                 "message": (
                     f"{max_cuts} coupes ajoutées sans atteindre de solution entière. "
-                    "En pratique on bascule alors vers le Branch-and-Bound "
-                    "(Branch-and-Cut) pour garantir la progression."
+                    "On bascule alors vers le Branch-and-Bound pour garantir "
+                    "la progression."
                 ),
                 "rounds": rounds,
                 "n_cuts": k,
@@ -163,7 +164,7 @@ def run_gomory(c_input, A_input, b_input, minimize=False, max_cuts=MAX_CUTS):
                 "status": "stalled",
                 "message": (
                     "Impossible de dériver une coupe utile (coefficients tous "
-                    "entiers après substitution). Utilisez le Branch-and-Bound."
+                    "entiers après substitution). On bascule vers le Branch-and-Bound."
                 ),
                 "rounds": rounds,
                 "n_cuts": k,
@@ -292,4 +293,5 @@ def _build_cut(final, A_cur, b_cur, n):
         "cut_std": cut_std,
         "new_row": new_row,
         "new_rhs": new_rhs,
+        "rhs_negative": new_rhs < 0,
     }

@@ -4,9 +4,9 @@
 {% block navbar_method %}Méthode des coupes (Gomory){% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
   <h2 class="mb-0">Méthode des coupes de Gomory</h2>
-  <a href="{% url 'pb_lineaire:index' %}" class="btn btn-outline-secondary">Nouveau problème</a>
+  {% include "pb_lineaire/_actions.html" %}
 </div>
 
 {% include "pb_lineaire/_problem.html" %}
@@ -37,9 +37,13 @@
 </div>
 {% else %}
 <div class="alert alert-warning mb-4">
-  <h5 class="alert-heading">Arrêt sans solution entière</h5>
+  <h5 class="alert-heading">Arrêt des coupes sans solution entière</h5>
   {{ result.message }}
+  {% if fallback %}<div class="mt-1">Résultat du Branch-and-Bound ci-dessous ; l'arbre détaillé suit les coupes.</div>{% endif %}
 </div>
+{% if fallback %}
+  {% with result=fallback %}{% include "pb_lineaire/_bb_summary.html" %}{% endwith %}
+{% endif %}
 {% endif %}
 
 <!-- Rappel de la procédure du cours -->
@@ -192,8 +196,9 @@
         <p class="small text-muted mb-1">soit, sous forme standard ≤ (multiplication par −1) :</p>
         <div class="cut-formula cut-formula--added">{{ round.cut.cut_std|math_text }} &nbsp;<span class="badge bg-danger">ajoutée</span></div>
         <p class="small text-muted mb-0 mt-1">
-          Le second membre \(b\) de la nouvelle contrainte est négatif → la prochaine
-          relaxation sera résolue par la méthode des deux phases.
+          {% if round.cut.rhs_negative %}Le second membre \(b\) de la nouvelle contrainte est négatif → la prochaine
+          relaxation sera résolue par la méthode des deux phases.{% else %}Le second membre \(b\) de la nouvelle contrainte est \(\ge 0\) : il ne rend pas
+          l'origine non admissible.{% endif %}
         </p>
       </div>
 
@@ -204,6 +209,15 @@
   {% endif %}{# lp_failed #}
 </section>
 {% endfor %}
+
+{% if fallback %}
+<section class="mb-5">
+  <div class="cut-round__header mb-3">
+    <span class="cut-round__num">Bascule automatique — Branch-and-Bound</span>
+  </div>
+  {% with result=fallback %}{% include "pb_lineaire/_bb_body.html" %}{% endwith %}
+</section>
+{% endif %}
 
 {% include "pb_lineaire/_legend.html" %}
 {% endblock %}

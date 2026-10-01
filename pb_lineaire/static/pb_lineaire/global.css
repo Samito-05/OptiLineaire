@@ -675,3 +675,33 @@ select.form-select-sm {
 .bb-dot--pruned     { border-style: dashed; border-color: var(--hairline); }
 .bb-dot--infeasible { border-style: dashed; border-color: var(--hairline); }
 .bb-dot--unexplored { border-style: dotted; border-color: var(--hairline); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Saisie, rappel du problème, petits écrans
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Saisie invalide (ni entier, ni décimal, ni fraction) */
+.form-control:invalid {
+  border-color: var(--red);
+  color: var(--red);
+}
+.form-text { color: var(--muted); }
+.op-select { min-width: 64px; text-align: center; }
+
+/* Ligne de formule : défile horizontalement plutôt que de déborder */
+.math-line {
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  padding-bottom: 2px;
+}
+
+.std-table { font-size: 0.86rem; }
+.std-table td { padding: 6px 12px; }
+
+@media (max-width: 575.98px) {
+  h2 { font-size: 1.7rem; }
+  .auto-banner { flex-direction: column; }
+  .simplex-table th,
+  .simplex-table td { padding: 6px 8px; }
+}

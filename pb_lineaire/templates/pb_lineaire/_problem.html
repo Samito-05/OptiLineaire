@@ -10,21 +10,11 @@
 <div class="card mb-4 shadow-sm">
   <div class="card-header fw-bold">Problème saisi</div>
   <div class="card-body">
-    <p class="mb-1">
-      <strong>{{ obj_type|upper }} Z =</strong>
-      {% for ci in c_display %}
-        {{ ci }} · {{ forloop.counter|math_index:"x" }}{% if not forloop.last %} + {% endif %}
-      {% endfor %}
-    </p>
+    <div class="math-line mb-1">\({{ objective_tex }}\)</div>
     <p class="mb-1 mt-2"><strong>Sous contraintes :</strong></p>
-    <ul class="mb-0">
-      {% for row, op, bi in constraints %}
-      <li>
-        {% for aij in row %}
-          {{ aij }} · {{ forloop.counter|math_index:"x" }}{% if not forloop.last %} + {% endif %}
-        {% endfor %}
-        &nbsp;{{ op }}&nbsp; {{ bi }}
-      </li>
+    <ul class="mb-0 list-unstyled">
+      {% for row in constraints_tex %}
+      <li class="math-line"><span class="text-muted">C{{ forloop.counter }} :</span> \({{ row }}\)</li>
       {% endfor %}
     </ul>
     <p class="text-muted mt-2 mb-0">
@@ -32,3 +22,44 @@
     </p>
   </div>
 </div>
+
+{% if std_form %}
+<!-- Forme standard réellement résolue (celle des tableaux) -->
+<div class="card mb-4 shadow-sm">
+  <div class="card-header fw-bold">Forme standard résolue <span class="fw-normal text-muted">(max, contraintes ≤)</span></div>
+  <div class="card-body">
+    <p class="small text-muted mb-2">
+      Les tableaux ci-dessous portent sur ce problème équivalent :
+      {% if std_form.minimize %}minimiser \(Z\) revient à maximiser \(Z' = -Z\) ; {% endif %}une contrainte \(\ge\) est multipliée par \(-1\) ; une contrainte \(=\) est scindée en deux inégalités.
+    </p>
+    <div class="math-line mb-2">\({{ std_form.objective }}\)</div>
+    <div class="table-responsive">
+      <table class="simplex-table std-table">
+        <thead><tr><th>Contrainte</th><th>Origine</th><th>Écart</th></tr></thead>
+        <tbody>
+          {% for row in std_form.rows %}
+          <tr>
+            <td class="text-start">\({{ row.tex }}\)</td>
+            <td>{{ row.origin }}</td>
+            <td>{{ row.slack|math_var }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if std_form.minimize %}
+    <p class="small text-muted mt-2 mb-0">
+      Les tableaux affichent \(Z'\) ; la valeur annoncée est reconvertie : \(Z^* = -Z'^*\).
+    </p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if omitted.steps or omitted.tableaux %}
+<div class="alert alert-light small mb-4">
+  <strong>Affichage allégé</strong> — problème volumineux :
+  {% if omitted.steps %}détail du pivotage masqué pour {{ omitted.steps }} itération{{ omitted.steps|pluralize }}{% endif %}{% if omitted.steps and omitted.tableaux %} ; {% endif %}{% if omitted.tableaux %}{{ omitted.tableaux }} tableau{{ omitted.tableaux|pluralize:"x" }} non affiché{{ omitted.tableaux|pluralize }}{% endif %}.
+  Le calcul, lui, est complet.
+</div>
+{% endif %}

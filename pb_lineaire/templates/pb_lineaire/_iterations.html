@@ -13,6 +13,9 @@
       {% elif it.status == "unbounded" %}
         <span class="badge bg-danger ms-2">Non borné</span>
       {% endif %}
+      {% if it.bland %}
+        <span class="badge bg-secondary ms-2">Règle de Bland (anti-cyclage)</span>
+      {% endif %}
     </span>
     {% if it.entering %}
     <span class="small">
@@ -35,10 +38,10 @@
     {% if it.entering and it.leaving %}
     <div class="alert alert-light border py-2 px-3 mb-3 small">
       <strong>Variable entrante :</strong> {{ it.entering|math_var }}
-        <span class="text-muted">(coefficient LF le plus positif)</span>
+        <span class="text-muted">({% if it.forced %}forcée en base{% elif it.bland %}sommet dégénéré : premier coefficient LF positif{% else %}coefficient LF le plus positif{% endif %})</span>
       &nbsp;|&nbsp;
       <strong>Variable sortante :</strong> {{ it.leaving|math_var }}
-        <span class="text-muted">(ratio minimum)</span>
+        <span class="text-muted">({% if it.forced %}RHS le plus négatif{% elif it.bland %}ratio minimum ; à égalité, plus petit indice{% else %}ratio minimum{% endif %})</span>
       &nbsp;|&nbsp;
       <strong>Élément pivot :</strong>
         <span class="badge bg-danger">{{ it.pivot_value }}</span>
@@ -56,7 +59,7 @@
               <th {% if col == it.entering %}class="col-entering"{% endif %}>{{ col|math_var }}</th>
             {% endfor %}
             <th>b</th>
-            {% if it.entering %}<th class="ratio-col">Ratio</th>{% endif %}
+            {% if it.entering and not it.forced %}<th class="ratio-col">Ratio</th>{% endif %}
           </tr>
         </thead>
         <tbody>
@@ -69,7 +72,7 @@
               </td>
             {% endfor %}
             <td {% if row.is_leaving %}class="row-leaving"{% endif %}>{{ row.rhs.value }}</td>
-            {% if it.entering %}
+            {% if it.entering and not it.forced %}
             <td class="ratio-col">
               {% if not row.is_lf %}{{ row.ratio }}{% if row.is_leaving %} <strong>← min</strong>{% endif %}{% endif %}
             </td>

@@ -8,11 +8,39 @@ def fmt(f):
     return f"{f.numerator}/{f.denominator}"
 
 
+MAX_ITER = 500
+
+
+class DetailBudget:
+    """
+    Limite le volume de détails enregistrés pour l'affichage, compté en
+    cellules de tableau. Tant que le budget le permet : tableaux + étapes de
+    pivot ("full") ; ensuite tableaux seuls ("tableau") ; enfin plus rien
+    ("none"). Le calcul lui-même n'est jamais affecté.
+    Un même budget est partagé par toutes les relaxations LP d'une résolution
+    entière (coupes de Gomory, Branch-and-Bound).
+    """
+
+    def __init__(self, full_cells=60_000, tableau_cells=120_000):
+        self.full_cells = full_cells
+        self.tableau_cells = tableau_cells
+        self.used = 0
+        self.omitted_steps = 0       # itérations sans détail de pivotage
+        self.omitted_tableaux = 0    # itérations non enregistrées
+
+    def level(self):
+        if self.used < self.full_cells:
+            return "full"
+        if self.used < self.tableau_cells:
+            return "tableau"
+        return "none"
+
+
 # ---------------------------------------------------------------------------
 # Point d'entrée public — méthode du simplexe (origine admissible)
 # ---------------------------------------------------------------------------
 
-def run_simplex(c_input, A_input, b_input):
+def run_simplex(c_input, A_input, b_input, budget=None):
     """
     Résout  max Z = c^T x   s.c.   Ax <= b,  x >= 0
     Suppose que l'origine est admissible (b_i >= 0 pour tout i).
@@ -52,7 +80,7 @@ def run_simplex(c_input, A_input, b_input):
     basis = [n + i for i in range(m)]        # base initiale : variables d'écart (y)
 
     iterations = []
-    result = _simplex_core(tableau, basis, var_names, m, num_vars, iterations)
+    result = _simplex_core(tableau, basis, var_names, m, num_vars, iterations, budget=budget)
 
     if result["status"] == "unbounded":
         return {
@@ -64,7 +92,7 @@ def run_simplex(c_input, A_input, b_input):
     if result["status"] == "max_iter":
         return {
             "status": "max_iter",
-            "message": "Nombre maximal d'itérations atteint : cyclage possible.",
+            "message": f"Nombre maximal d'itérations ({MAX_ITER}) atteint.",
             "iterations": iterations,
         }
 
@@ -100,37 +128,36 @@ def run_simplex(c_input, A_input, b_input):
 # Moteur du simplexe — réutilisable par la méthode des deux phases
 # ---------------------------------------------------------------------------
 
-def _simplex_core(tableau, basis, var_names, m, num_vars, iterations, start_iter=0):
+def _simplex_core(tableau, basis, var_names, m, num_vars, iterations, start_iter=0, budget=None):
     """
     Exécute les itérations du simplexe sur le tableau fourni.
     - Modifie `tableau` et `basis` en place.
-    - Ajoute les snapshots dans `iterations`.
-    - Retourne {"status": "optimal" | "unbounded"}.
+    - Ajoute les snapshots dans `iterations` (dans la limite de `budget`).
+    - Retourne {"status": "optimal" | "unbounded" | "max_iter"}.
+
+    Règle de pivot : coefficient LF le plus positif (cours). Après un pivot
+    dégénéré (ratio minimum nul), on applique la règle de Bland (plus petit
+    indice) jusqu'au prochain pivot non dégénéré : le cyclage est impossible.
     """
-    for it_num in range(100):
+    bland = False
+    for it_num in range(MAX_ITER):
         lf = tableau[0]
+        number = start_iter + it_num
 
         # Variable entrante : coefficient LF le plus positif
+        # (règle de Bland : premier coefficient LF positif)
         entering_col = -1
         max_coef = Fraction(0)
         for j in range(num_vars):
             if lf[j] > max_coef:
                 max_coef = lf[j]
                 entering_col = j
-
-        # Ratios pour l'affichage
-        ratios = [None]
-        for i in range(1, m + 1):
-            if entering_col >= 0 and tableau[i][entering_col] > 0:
-                ratios.append(fmt(tableau[i][-1] / tableau[i][entering_col]))
-            else:
-                ratios.append("—")
+                if bland:
+                    break
 
         if entering_col == -1:
-            snap = _snapshot(tableau, basis, var_names, m, num_vars, -1, -1, ratios)
-            snap["number"] = start_iter + it_num
-            snap["status"] = "optimal"
-            iterations.append(snap)
+            _emit(tableau, basis, var_names, m, num_vars, iterations, budget,
+                  number, "optimal")
             return {"status": "optimal"}
 
         # Variable sortante : test du ratio minimum
@@ -141,38 +168,79 @@ def _simplex_core(tableau, basis, var_names, m, num_vars, iterations, start_iter
         ]
 
         if not valid:
-            snap = _snapshot(tableau, basis, var_names, m, num_vars, entering_col, -1, ratios)
-            snap["number"] = start_iter + it_num
-            snap["status"] = "unbounded"
-            iterations.append(snap)
+            _emit(tableau, basis, var_names, m, num_vars, iterations, budget,
+                  number, "unbounded", entering_col)
             return {"status": "unbounded"}
 
-        _, leaving_row = min(valid, key=lambda x: x[0])
+        min_ratio = min(r for r, _ in valid)
+        ties = [i for r, i in valid if r == min_ratio]
+        # À égalité : première ligne (règle de Bland : plus petit indice de variable)
+        leaving_row = min(ties, key=lambda i: basis[i - 1]) if bland else ties[0]
         pivot_val = tableau[leaving_row][entering_col]
 
-        snap = _snapshot(tableau, basis, var_names, m, num_vars,
-                         entering_col, leaving_row, ratios, pivot_val)
-        snap["number"] = start_iter + it_num
-        snap["status"] = "pivot"
-        snap["pivot_steps"] = _compute_pivot_steps(
-            tableau, basis, var_names, m, num_vars, entering_col, leaving_row, pivot_val
-        )
-        iterations.append(snap)
+        _emit(tableau, basis, var_names, m, num_vars, iterations, budget,
+              number, "pivot", entering_col, leaving_row, pivot_val, bland=bland)
 
-        # --- Opération de pivot ---
-        tableau[leaving_row] = [x / pivot_val for x in tableau[leaving_row]]
-        for i in range(m + 1):
-            if i != leaving_row:
-                factor = tableau[i][entering_col]
-                if factor != 0:
-                    tableau[i] = [
-                        tableau[i][j] - factor * tableau[leaving_row][j]
-                        for j in range(len(tableau[i]))
-                    ]
-
+        _pivot(tableau, leaving_row, entering_col)
         basis[leaving_row - 1] = entering_col
+        bland = min_ratio == 0
 
     return {"status": "max_iter"}
+
+
+def _pivot(tableau, pivot_row, pivot_col):
+    """Opération de pivot en place sur l'élément (pivot_row, pivot_col)."""
+    pivot_val = tableau[pivot_row][pivot_col]
+    tableau[pivot_row] = [x / pivot_val for x in tableau[pivot_row]]
+    for i in range(len(tableau)):
+        if i != pivot_row:
+            factor = tableau[i][pivot_col]
+            if factor != 0:
+                tableau[i] = [
+                    tableau[i][j] - factor * tableau[pivot_row][j]
+                    for j in range(len(tableau[i]))
+                ]
+
+
+def _emit(tableau, basis, var_names, m, num_vars, iterations, budget, number, status,
+          entering_col=-1, leaving_row=-1, pivot_val=None, ratios=True, **extra):
+    """
+    Enregistre le snapshot d'une itération dans `iterations`, avec le détail
+    du pivotage si `pivot_val` est fourni — dans la limite de `budget`.
+    """
+    level = budget.level() if budget else "full"
+    if level == "none":
+        budget.omitted_tableaux += 1
+        return
+
+    ratio_col = None
+    if ratios:
+        ratio_col = [None]
+        for i in range(1, m + 1):
+            if entering_col >= 0 and tableau[i][entering_col] > 0:
+                ratio_col.append(fmt(tableau[i][-1] / tableau[i][entering_col]))
+            else:
+                ratio_col.append("—")
+
+    snap = _snapshot(tableau, basis, var_names, m, num_vars,
+                     entering_col, leaving_row, ratio_col, pivot_val)
+    snap["number"] = number
+    snap["status"] = status
+    snap.update(extra)
+    cells = (m + 1) * (num_vars + 1)
+
+    if pivot_val is not None:
+        if level == "full":
+            snap["pivot_steps"] = _compute_pivot_steps(
+                tableau, basis, var_names, m, num_vars, entering_col, leaving_row, pivot_val
+            )
+            cells += 2 * (num_vars + 1) * len(snap["pivot_steps"])
+        else:
+            budget.omitted_steps += 1
+
+    iterations.append(snap)
+    if budget:
+        budget.used += cells
 
 
 # ---------------------------------------------------------------------------
