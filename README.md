@@ -25,14 +25,16 @@ Tout le calcul est effectué en **arithmétique rationnelle exacte** (`fractions
 
 | Fonctionnalité | Détail |
 |---|---|
-| 📊 Saisie interactive | Nombre de variables et de contraintes personnalisable |
-| ➕ Types de contraintes | ≤, ≥ et = supportés (normalisation automatique en forme ≤) |
+| 📊 Saisie interactive | De 1 à 30 variables et contraintes ; entiers, décimaux (`2.5` ou `2,5`) et fractions (`1/3`) |
+| 💾 Saisie conservée | Les valeurs restent quand on change la taille du problème, après une erreur, et via « Modifier le problème » |
+| ➕ Types de contraintes | ≤, ≥ et = supportés ; la **forme standard résolue** (max, ≤) est affichée quand elle diffère de la saisie |
 | 🎯 Objectif | Maximisation ou minimisation |
 | 🔢 Variables entières | Interrupteur dédié + choix entre coupes de Gomory et Branch-and-Bound |
 | ⚙️ Sélection automatique | Simplexe si tous les `bᵢ ≥ 0`, deux phases sinon — expliqué par un bandeau « Choix de méthode » |
 | 🎲 Remplissage aléatoire | Génère un exemple instantanément pour tester |
 | 🔍 Visualisation pas-à-pas | Itérations avec pivot mis en évidence, opérations ligne par ligne, étapes de coupe numérotées, arbre B&B |
-| ⚠️ Cas particuliers | Détection : non borné, infaisable, cyclage (limite d'itérations), limites de coupes/nœuds |
+| ⚠️ Cas particuliers | Détection : non borné, infaisable ; anti-cyclage (règle de Bland sur sommet dégénéré) ; bascule automatique Gomory → Branch-and-Bound |
+| 📴 Hors ligne | Bootstrap, MathJax et polices servis localement — aucun CDN |
 | 📱 Interface responsive | Design Bootstrap, compatible mobile |
 | 🌓 Mode clair/sombre | Thème commutable côté client |
 
@@ -68,15 +70,11 @@ Tout le calcul est effectué en **arithmétique rationnelle exacte** (`fractions
    ```bash
    pip install -r requirements.txt
    ```
-5. Appliquez les migrations :
-   ```bash
-   python manage.py migrate
-   ```
-6. Lancez le serveur :
+5. Lancez le serveur :
    ```bash
    python manage.py runserver
    ```
-7. Ouvrez votre navigateur à l'adresse : [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+6. Ouvrez votre navigateur à l'adresse : [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
 
 ---
 
@@ -101,15 +99,11 @@ Tout le calcul est effectué en **arithmétique rationnelle exacte** (`fractions
    ```bash
    pip install -r requirements.txt
    ```
-4. Appliquez les migrations :
-   ```bash
-   python manage.py migrate
-   ```
-5. Lancez le serveur :
+4. Lancez le serveur :
    ```bash
    python manage.py runserver
    ```
-6. Ouvrez : [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+5. Ouvrez : [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
 
 ---
 
@@ -125,6 +119,23 @@ Tout le calcul est effectué en **arithmétique rationnelle exacte** (`fractions
 
 ---
 
+> L'application ne stocke rien : pas de base de données, donc pas de migration.
+
+### Configuration (optionnelle)
+
+Par défaut, les réglages conviennent au développement local. Pour un déploiement :
+
+| Variable | Rôle |
+|---|---|
+| `DJANGO_DEBUG=0` | Désactive le mode debug |
+| `DJANGO_SECRET_KEY` | Clé secrète — obligatoire quand `DJANGO_DEBUG=0` |
+| `DJANGO_ALLOWED_HOSTS` | Hôtes autorisés, séparés par des virgules (défaut : `localhost,127.0.0.1,[::1]`) |
+
+Avec `DJANGO_DEBUG=0`, `runserver` ne sert plus les fichiers statiques : lancez
+`python manage.py collectstatic` et servez `staticfiles/` par le serveur web.
+
+---
+
 ## 📖 Utilisation
 
 ### Étape 1 — Configurer le problème
@@ -134,7 +145,7 @@ Tout le calcul est effectué en **arithmétique rationnelle exacte** (`fractions
 - (Optionnel) Activer **Variables entières** (`xⱼ ∈ ℤ`), puis choisir la méthode :
   - **Coupes de Gomory** : relaxation LP + coupes successives dérivées du tableau optimal
   - **Branch-and-Bound** : arbre d'exploration avec bornes et élagage
-- Saisir les **coefficients** de la fonction objectif `c`
+- Saisir les **coefficients** de la fonction objectif `c` — entiers, décimaux ou fractions (`1/3`)
 - Saisir les coefficients des contraintes `A`, les **opérateurs** (≤, ≥, =) et les membres droits `b`
 
 > 💡 La méthode continue (Simplexe ou deux phases) est **choisie automatiquement** :
@@ -147,7 +158,9 @@ Cliquez sur **« Résoudre »**.
 ### Étape 3 — Lire les résultats
 
 Chaque page de résultats commence par un bandeau **« Choix de méthode »** qui justifie
-la méthode retenue (par exemple : `b₁ = −2 < 0` → deux phases), suivi du rappel du problème.
+la méthode retenue (par exemple : `b₁ = −2 < 0` → deux phases), suivi du rappel du problème
+et, si le problème a été transformé (min, ≥, =), de la **forme standard résolue**.
+« Modifier le problème » revient au formulaire avec la saisie ; « Nouveau problème » repart de zéro.
 
 **Simplexe / Deux phases :**
 - Tableau initial, puis chaque itération : variable entrante (coefficient LF le plus positif),
@@ -161,6 +174,8 @@ la méthode retenue (par exemple : `b₁ = −2 < 0` → deux phases), suivi du 
   coupe `Σ{aᵢⱼ}·tⱼ ≥ {bᵢ}`, substitution des écarts, mise à l'échelle entière
   (arrondi de Chvátal–Gomory) et contrainte ajoutée
 - Itérations de chaque relaxation consultables en repli
+- Si les coupes n'aboutissent pas (15 coupes), **bascule automatique vers le Branch-and-Bound**,
+  affiché à la suite
 
 **Branch-and-Bound :**
 - **Arbre d'exploration** dessiné (nœuds branché / solution entière ★ / élagué / infaisable)
@@ -191,7 +206,7 @@ OptiLineaire/
     ├── lp_relax.py                  # Relaxation LP automatique (Simplexe ou deux phases)
     ├── gomory.py                    # Coupes de Gomory (programmation entière)
     ├── branch_bound.py              # Branch-and-Bound (programmation entière)
-    ├── tests.py                     # 33 tests unitaires
+    ├── tests.py                     # 44 tests unitaires
     │
     ├── templatetags/
     │   └── math_notation.py         # Filtres Django pour la notation mathématique (MathJax)
@@ -205,14 +220,16 @@ OptiLineaire/
     │   ├── result_branch_bound.html # Résultats Branch-and-Bound (arbre + nœuds)
     │   ├── _iterations.html         # Sous-template : tableaux d'itérations
     │   ├── _lp_block.html           # Sous-template : une relaxation LP (simplexe ou 2 phases)
-    │   ├── _problem.html            # Sous-template : rappel du problème + bandeau méthode
+    │   ├── _problem.html            # Sous-template : bandeau méthode, rappel du problème, forme standard
+    │   ├── _actions.html            # Sous-template : boutons Modifier / Nouveau problème
+    │   ├── _bb_summary.html         # Sous-template : résultat global du B&B
+    │   ├── _bb_body.html            # Sous-template : arbre + détail des nœuds B&B
     │   ├── _legend.html             # Sous-template : légende des couleurs
     │   └── _bb_node.html            # Sous-template récursif : nœud de l'arbre B&B
     │
-    ├── static/pb_lineaire/
-    │   └── global.css               # Styles (variables CSS, mode clair/sombre)
-    │
-    └── migrations/
+    └── static/pb_lineaire/
+        ├── global.css               # Styles (variables CSS, mode clair/sombre)
+        └── vendor/                  # Bootstrap 5.3.3, MathJax 3.2.2 (SVG), polices — servis localement
 ```
 
 ---
@@ -225,6 +242,10 @@ OptiLineaire/
 
 > Aucune dépendance externe supplémentaire — tout le calcul (Simplexe, deux phases,
 > Gomory, Branch-and-Bound) est implémenté en pur Python avec le module standard `fractions`.
+>
+> Côté navigateur, `static/pb_lineaire/vendor/` embarque Bootstrap 5.3.3 (MIT),
+> MathJax 3.2.2 (Apache 2.0) et les polices Bricolage Grotesque, Archivo et Space Mono (SIL OFL) :
+> l'application fonctionne sans connexion Internet.
 
 ---
 
@@ -235,14 +256,20 @@ OptiLineaire/
 - La ligne objectif (**LF**) contient les coûts réduits ; valeur de l'objectif = **−(coin bas-droit)**
 - **Variable entrante** : coefficient **le plus positif** de la ligne LF
 - **Variable sortante** : ratio minimum `bᵢ / aᵢⱼ` avec `aᵢⱼ > 0`
+- **Anti-cyclage** : après un pivot dégénéré (ratio minimum nul), règle de **Bland**
+  (plus petit indice) jusqu'au prochain pivot non dégénéré — signalée dans l'itération
 - **Optimalité** : tous les coefficients LF ≤ 0
 - Variables d'écart nommées `y₁, …, yₘ` ; minimisation résolue en interne comme `max(−c)`
 
 ### Simplexe — `simplex.py`
 
 `run_simplex(c, A, b)` : résout `max c^T x, Ax ≤ b, x ≥ 0` quand tous les `bᵢ ≥ 0`.
-Statuts : `optimal`, `unbounded`, `non_admissible`, `max_iter` (garde anti-cyclage à 100 itérations).
+Statuts : `optimal`, `unbounded`, `non_admissible`, `max_iter` (garde à 500 itérations).
 Le moteur `_simplex_core` est réutilisé par toutes les autres méthodes.
+
+`DetailBudget` borne le volume de détails enregistrés pour l'affichage (étapes de pivot,
+puis tableaux) : une page de résultats reste de taille raisonnable même à 30 × 30.
+Le calcul n'est jamais tronqué ; la page signale un « affichage allégé ».
 
 ### Deux phases — `simplex_two_phase.py`
 
@@ -269,11 +296,12 @@ Le moteur `_simplex_core` est réutilisé par toutes les autres méthodes.
    coupes suivantes soient valides
 5. Ajout de la coupe au modèle et retour en 1
 
-Au-delà de `max_cuts` coupes, l'application recommande de basculer vers le Branch-and-Bound.
+Au-delà de `max_cuts` coupes (ou si aucune coupe utile ne peut être dérivée), la vue
+bascule automatiquement vers le Branch-and-Bound et affiche les deux.
 
 ### Branch-and-Bound — `branch_bound.py`
 
-`run_branch_and_bound(c, A, b, minimize=False, max_nodes=40)` : énumération arborescente.
+`run_branch_and_bound(c, A, b, minimize=False, max_nodes=100, time_limit=8.0)` : énumération arborescente.
 
 - Sélection de nœud **best-bound**, branchement sur la **variable la plus fractionnaire** :
   fils `xⱼ ≤ ⌊v⌋` et `xⱼ ≥ ⌈v⌉`
@@ -281,6 +309,7 @@ Au-delà de `max_cuts` coupes, l'application recommande de basculer vers le Bran
   (mise à jour de l'incumbent + élagage des nœuds en attente dominés)
 - Relaxation de chaque nœud résolue automatiquement (Simplexe ou deux phases)
 - Résultat : arbre complet + détail des nœuds dans l'ordre d'exploration
+- Limite de nœuds ou de temps atteinte → incumbent partiel affiché
 
 ### Sélection automatique — `views.py` + `lp_relax.py`
 
@@ -306,8 +335,9 @@ Au-delà de `max_cuts` coupes, l'application recommande de basculer vers le Bran
 python manage.py test pb_lineaire
 ```
 
-**33 tests** couvrant les quatre méthodes (optimal, non borné, infaisable, minimisation,
-données fractionnaires, coefficients de coupe entiers) et le routage des vues.
+**44 tests** couvrant les quatre méthodes (optimal, non borné, infaisable, minimisation,
+données fractionnaires, coefficients de coupe entiers, anti-cyclage, budget d'affichage)
+et les vues (routage, validation de la saisie, limites de taille, bascule Gomory → B&B).
 Les méthodes entières ont en outre été validées par comparaison avec une énumération
 exhaustive sur 190 instances aléatoires.
 
@@ -341,8 +371,7 @@ puis optimum entier **Z\* = 20 en (4, 0)**.
 | Problème | Solution |
 |---|---|
 | Port déjà utilisé | `python manage.py runserver 8001` |
-| Erreur de migration | `python manage.py migrate --fake-initial` |
-| Réinitialiser la base de données | `rm db.sqlite3 && python manage.py migrate` |
+| « Affichage allégé » sur la page de résultats | Problème volumineux : le détail de certains pivots est masqué, le résultat reste exact |
 | Module introuvable | Vérifiez que votre environnement virtuel est activé |
 
 ---

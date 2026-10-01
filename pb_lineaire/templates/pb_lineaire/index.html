@@ -17,9 +17,8 @@
     <div class="alert alert-danger">{{ error }}</div>
     {% endif %}
 
-    <form method="post" action="{% url 'pb_lineaire:solve' %}" id="mainForm">
+    <form method="post" action="{% url 'pb_lineaire:solve' %}" id="mainForm" autocomplete="off">
       {% csrf_token %}
-      <input type="hidden" name="method" value="auto">
 
       <!-- Paramètres généraux -->
       <div class="card mb-4 shadow-sm">
@@ -30,17 +29,17 @@
         <div class="card-body row g-3">
           <div class="col-md-3">
             <label class="form-label">Nb de variables</label>
-            <select name="n_vars" id="n_vars" class="form-select" onchange="buildForm()">
-              {% for i in "2345678901234567890123456789" %}
-              <option value="{{ forloop.counter|add:1 }}">{{ forloop.counter|add:1 }}</option>
+            <select name="n_vars" id="n_vars" class="form-select">
+              {% for i in var_choices %}
+              <option value="{{ i }}">{{ i }}</option>
               {% endfor %}
             </select>
           </div>
           <div class="col-md-3">
             <label class="form-label">Nb de contraintes</label>
-            <select name="n_constraints" id="n_constraints" class="form-select" onchange="buildForm()">
-              {% for i in "2345678901234567890123456789" %}
-              <option value="{{ forloop.counter|add:1 }}">{{ forloop.counter|add:1 }}</option>
+            <select name="n_constraints" id="n_constraints" class="form-select">
+              {% for i in constraint_choices %}
+              <option value="{{ i }}">{{ i }}</option>
               {% endfor %}
             </select>
           </div>
@@ -52,7 +51,7 @@
             </select>
           </div>
           <div class="col-md-3" style="align-self:flex-end">
-            <button type="button" class="btn btn-secondary w-100" onclick="fillRandom()">Remplir aléatoire</button>
+            <button type="button" class="btn btn-secondary w-100" id="randomBtn">Remplir aléatoire</button>
           </div>
 
           <!-- Variables entières -->
@@ -95,12 +94,13 @@
         <div class="card-header fw-bold">Fonction objectif &nbsp;<span id="obj_label" class="fw-normal text-muted">max Z =</span></div>
         <div class="card-body">
           <div id="obj_fields" class="d-flex flex-wrap gap-3 align-items-center"></div>
+          <div class="form-text mt-3">Valeurs acceptées : entiers, décimaux (2.5 ou 2,5) et fractions (1/3).</div>
         </div>
       </div>
 
       <!-- Contraintes -->
       <div class="card mb-4 shadow-sm">
-        <div class="card-header fw-bold">Contraintes &nbsp;<span class="fw-normal text-muted">\(Ax \le b\)</span></div>
+        <div class="card-header fw-bold">Contraintes &nbsp;<span class="fw-normal text-muted">≤, ≥ ou = au choix</span></div>
         <div class="card-body">
           <div class="table-responsive">
             <table class="table table-bordered align-middle text-center" id="constraints_table">
@@ -111,7 +111,10 @@
         </div>
       </div>
 
-      <button type="submit" class="btn btn-primary btn-lg px-5">Résoudre</button>
+      <div class="d-flex flex-wrap gap-2">
+        <button type="submit" class="btn btn-primary btn-lg px-5">Résoudre</button>
+        <button type="button" class="btn btn-secondary btn-lg" id="resetBtn">Réinitialiser</button>
+      </div>
     </form>
 
   </div>
@@ -120,119 +123,202 @@
 
 {% block extra_js %}
 <script>
-function buildForm() {
-  const n = parseInt(document.getElementById('n_vars').value);
-  const m = parseInt(document.getElementById('n_constraints').value);
-  const objType = document.getElementById('obj_type').value;
+(function () {
+  const STORAGE_KEY = 'optilineaire-problem';
+  // Entier, décimal (point ou virgule) ou fraction p/q — le serveur revalide.
+  const NUMBER_PATTERN = '\\s*[+\\-−]?(\\d+([.,]\\d*)?|[.,]\\d+)([eE][+\\-]?\\d+)?\\s*|\\s*[+\\-−]?\\d+\\s*/\\s*\\d+\\s*';
+  const NUMBER_HINT = 'Nombre attendu : entier, décimal (2.5) ou fraction (1/3)';
 
-  // Mise à jour label objectif
-  document.getElementById('obj_label').textContent = (objType === 'min' ? 'min' : 'max') + ' Z =';
+  const form           = document.getElementById('mainForm');
+  const nSelect        = document.getElementById('n_vars');
+  const mSelect        = document.getElementById('n_constraints');
+  const objSelect      = document.getElementById('obj_type');
+  const integerSwitch  = document.getElementById('integerSwitch');
+  const integerMethods = document.getElementById('integerMethods');
+  const methodPreview  = document.getElementById('methodPreview');
+  const navbarText     = document.getElementById('navbarMethodText');
+  const objDiv         = document.getElementById('obj_fields');
+  const thead          = document.getElementById('constraints_head');
+  const tbody          = document.getElementById('constraints_body');
 
-  // --- Fonction objectif ---
-  const objDiv = document.getElementById('obj_fields');
-  objDiv.innerHTML = '';
-  for (let i = 0; i < n; i++) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'd-flex align-items-center gap-1';
-     wrapper.innerHTML = `
-       <input type="number" step="any" name="c_${i}" id="c_${i}"
-              class="form-control" style="width:80px" placeholder="\\(c_{${i+1}}\\)" value="0">
-       <span class="text-muted">· \\(x_{${i+1}}\\)${i < n-1 ? ' +' : ''}
-       </span>`;
-    objDiv.appendChild(wrapper);
-  }
+  const DEFAULT_STATE = { n: 2, m: 2, objType: 'max', integer: false, intMethod: 'gomory', c: [], A: [], b: [], ops: [] };
 
-   // --- En-tête des contraintes ---
-   const thead = document.getElementById('constraints_head');
-    let thRow = '<tr><th>Contrainte</th>';
-    for (let j = 0; j < n; j++) thRow += `<th>\\(x_{${j+1}}\\)</th>`;
-    thRow += '<th>Opérateur</th><th>\\(b\\)</th></tr>';
-   thead.innerHTML = thRow;
+  function field(name) { return form.elements[name]; }
 
-   // --- Corps des contraintes ---
-   const tbody = document.getElementById('constraints_body');
-   tbody.innerHTML = '';
-   for (let i = 0; i < m; i++) {
-     let row = `<tr><td class="fw-bold text-muted">\\(C_{${i+1}}\\)</td>`;
-     for (let j = 0; j < n; j++) {
-       row += `<td><input type="number" step="any" name="a_${i}_${j}" class="form-control form-control-sm text-center input-width-constraint-coef" placeholder="0" value="0"></td>`;
-     }
-     row += `<td><select name="op_${i}" class="form-select form-select-sm" style="width:100%;text-align:center">
-       <option value="le">≤</option>
-       <option value="ge">≥</option>
-       <option value="eq">=</option>
-     </select></td>`;
-     row += `<td><input type="number" step="any" name="b_${i}" class="form-control form-control-sm text-center input-width-constraint-b" placeholder="0" value="0"></td>`;
-      row += '</tr>';
-      tbody.innerHTML += row;
+  // ── État du formulaire : lecture / sauvegarde / restauration ──
+  function readState() {
+    const state = {
+      n: parseInt(nSelect.value), m: parseInt(mSelect.value),
+      objType: objSelect.value, integer: integerSwitch.checked,
+      intMethod: form.elements['int_method'].value,
+      c: [], A: [], b: [], ops: [],
+    };
+    for (let j = 0; field('c_' + j); j++) state.c.push(field('c_' + j).value);
+    for (let i = 0; field('b_' + i); i++) {
+      const row = [];
+      for (let j = 0; field('a_' + i + '_' + j); j++) row.push(field('a_' + i + '_' + j).value);
+      state.A.push(row);
+      state.b.push(field('b_' + i).value);
+      state.ops.push(field('op_' + i).value);
     }
-
-   // Demander à MathJax de retraiter le DOM pour les nouvelles équations
-   if (typeof MathJax !== 'undefined') {
-     MathJax.typesetPromise().catch(err => console.log(err));
-   }
- }
-
-document.getElementById('obj_type').addEventListener('change', buildForm);
-
-// ── Variables entières : afficher le choix Gomory / Branch-and-Bound ──
-const integerSwitch  = document.getElementById('integerSwitch');
-const integerMethods = document.getElementById('integerMethods');
-const methodPreview  = document.getElementById('methodPreview');
-const navbarText     = document.getElementById('navbarMethodText');
-
-function updateMethodPreview() {
-  if (integerSwitch.checked) {
-    integerMethods.hidden = false;
-    const chosen = document.querySelector('input[name="int_method"]:checked').value;
-    const label = chosen === 'bb' ? 'Branch-and-Bound' : 'Coupes de Gomory';
-    methodPreview.textContent = 'Méthode : ' + label;
-    if (navbarText) navbarText.textContent = label;
-  } else {
-    integerMethods.hidden = true;
-    methodPreview.textContent = 'Méthode : automatique';
-    if (navbarText) navbarText.textContent = 'Sélection automatique';
-  }
-}
-
-integerSwitch.addEventListener('change', updateMethodPreview);
-document.querySelectorAll('input[name="int_method"]').forEach(r =>
-  r.addEventListener('change', updateMethodPreview));
-
-// Init au chargement
-buildForm();
-updateMethodPreview();
-
-// Fonction pour remplir aléatoirement
-function fillRandom() {
-  const n = parseInt(document.getElementById('n_vars').value);
-  const m = parseInt(document.getElementById('n_constraints').value);
-
-  // Remplir fonction objectif
-  for (let i = 0; i < n; i++) {
-    const value = Math.floor(Math.random() * 10) + 1; // 1-10
-    const input = document.getElementById(`c_${i}`);
-    if (input) input.value = value;
+    return state;
   }
 
-  // Remplir contraintes (A et b)
-  for (let i = 0; i < m; i++) {
+  function saveState() {
+    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(readState())); } catch (e) {}
+  }
+
+  function loadState() {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY));
+      if (saved && nSelect.querySelector('option[value="' + saved.n + '"]')
+                && mSelect.querySelector('option[value="' + saved.m + '"]')) {
+        return Object.assign({}, DEFAULT_STATE, saved);
+      }
+    } catch (e) {}
+    return DEFAULT_STATE;
+  }
+
+  function typeset(nodes) {
+    if (window.MathJax && MathJax.typesetPromise) {
+      MathJax.typesetPromise(nodes).catch(err => console.log(err));
+    }
+  }
+
+  function numberInput(name, value, className) {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.name = name;
+    input.className = 'form-control ' + className;
+    input.value = value === undefined || value === '' ? '0' : value;
+    input.pattern = NUMBER_PATTERN;
+    input.title = NUMBER_HINT;
+    input.setAttribute('aria-label', name);
+    input.addEventListener('focus', () => input.select());
+    return input;
+  }
+
+  // ── Construction du formulaire : les valeurs déjà saisies sont conservées ──
+  function buildForm(state) {
+    const n = state.n, m = state.m;
+
+    document.getElementById('obj_label').textContent = state.objType + ' Z =';
+
+    objDiv.textContent = '';
     for (let j = 0; j < n; j++) {
-      const value = Math.floor(Math.random() * 20) + 1; // 1-20
-      const input = document.querySelector(`input[name="a_${i}_${j}"]`);
-      if (input) input.value = value;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'd-flex align-items-center gap-1';
+      wrapper.appendChild(numberInput('c_' + j, state.c[j], 'input-width-coef text-center'));
+      const label = document.createElement('span');
+      label.className = 'text-muted';
+      label.textContent = '· \\(x_{' + (j + 1) + '}\\)' + (j < n - 1 ? ' +' : '');
+      wrapper.appendChild(label);
+      objDiv.appendChild(wrapper);
     }
-    // Remplir b
-    const bValue = Math.floor(Math.random() * 100) + 20; // 20-120
-   const bInput = document.querySelector(`input[name="b_${i}"]`);
-     if (bInput) bInput.value = bValue;
-   }
 
-   // Demander à MathJax de retraiter le DOM
-   if (typeof MathJax !== 'undefined') {
-     MathJax.typesetPromise().catch(err => console.log(err));
-   }
- }
+    let head = '<tr><th>Contrainte</th>';
+    for (let j = 0; j < n; j++) head += '<th>\\(x_{' + (j + 1) + '}\\)</th>';
+    thead.innerHTML = head + '<th>Opérateur</th><th>\\(b\\)</th></tr>';
 
+    tbody.textContent = '';
+    for (let i = 0; i < m; i++) {
+      const tr = document.createElement('tr');
+      const name = document.createElement('td');
+      name.className = 'fw-bold text-muted';
+      name.textContent = '\\(C_{' + (i + 1) + '}\\)';
+      tr.appendChild(name);
+
+      const row = state.A[i] || [];
+      for (let j = 0; j < n; j++) {
+        const td = document.createElement('td');
+        td.appendChild(numberInput('a_' + i + '_' + j, row[j], 'form-control-sm text-center input-width-constraint-coef'));
+        tr.appendChild(td);
+      }
+
+      const opCell = document.createElement('td');
+      const op = document.createElement('select');
+      op.name = 'op_' + i;
+      op.className = 'form-select form-select-sm op-select';
+      op.setAttribute('aria-label', 'Opérateur de la contrainte ' + (i + 1));
+      [['le', '≤'], ['ge', '≥'], ['eq', '=']].forEach(([value, text]) => op.add(new Option(text, value)));
+      op.value = state.ops[i] || 'le';
+      opCell.appendChild(op);
+      tr.appendChild(opCell);
+
+      const bCell = document.createElement('td');
+      bCell.appendChild(numberInput('b_' + i, state.b[i], 'form-control-sm text-center input-width-constraint-b'));
+      tr.appendChild(bCell);
+      tbody.appendChild(tr);
+    }
+
+    typeset([objDiv, thead, tbody]);
+  }
+
+  function applyState(state) {
+    nSelect.value = state.n;
+    mSelect.value = state.m;
+    objSelect.value = state.objType;
+    integerSwitch.checked = state.integer;
+    form.elements['int_method'].value = state.intMethod;
+    buildForm(state);
+    updateMethodPreview();
+  }
+
+  // ── Aperçu de la méthode qui sera choisie (même règle que le serveur) ──
+  function toNumber(text) {
+    const t = text.replace(/\s/g, '').replace(',', '.').replace('−', '-');
+    const parts = t.split('/');
+    return parts.length === 2 ? parseFloat(parts[0]) / parseFloat(parts[1]) : parseFloat(t || '0');
+  }
+
+  function updateMethodPreview() {
+    let label, navbar;
+    integerMethods.hidden = !integerSwitch.checked;
+    if (integerSwitch.checked) {
+      label = navbar = form.elements['int_method'].value === 'bb' ? 'Branch-and-Bound' : 'Coupes de Gomory';
+    } else {
+      // Deux phases dès qu'un second membre est négatif après mise sous forme ≤
+      let twoPhase = false;
+      for (let i = 0; field('b_' + i); i++) {
+        const b = toNumber(field('b_' + i).value), op = field('op_' + i).value;
+        if ((op === 'le' && b < 0) || (op === 'ge' && b > 0) || (op === 'eq' && b !== 0)) twoPhase = true;
+      }
+      label = twoPhase ? 'deux phases' : 'Simplexe';
+      navbar = 'Sélection automatique';
+    }
+    methodPreview.textContent = 'Méthode : ' + label;
+    if (navbarText) navbarText.textContent = navbar;
+  }
+
+  function fillRandom() {
+    const state = readState();
+    const rand = (min, max) => String(Math.floor(Math.random() * (max - min + 1)) + min);
+    state.c = Array.from({ length: state.n }, () => rand(1, 10));
+    state.A = Array.from({ length: state.m }, () => Array.from({ length: state.n }, () => rand(1, 20)));
+    state.b = Array.from({ length: state.m }, () => rand(20, 119));
+    state.ops = Array.from({ length: state.m }, () => 'le');
+    applyState(state);
+    saveState();
+  }
+
+  // ── Événements ──
+  [nSelect, mSelect, objSelect].forEach(el =>
+    el.addEventListener('change', () => { buildForm(readState()); updateMethodPreview(); }));
+  form.addEventListener('input', () => { updateMethodPreview(); saveState(); });
+  form.addEventListener('change', () => { updateMethodPreview(); saveState(); });
+  form.addEventListener('submit', saveState);
+  document.getElementById('randomBtn').addEventListener('click', fillRandom);
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    try { sessionStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    applyState(DEFAULT_STATE);
+  });
+
+  // ── Init : « Nouveau problème » (?new=1) repart de zéro, sinon on restaure ──
+  if (new URLSearchParams(location.search).has('new')) {
+    try { sessionStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    history.replaceState(null, '', location.pathname);
+  }
+  applyState(loadState());
+})();
 </script>
 {% endblock %}

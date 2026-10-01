@@ -1,0 +1,39 @@
+{% load math_notation %}
+<!-- Résultat global -->
+{% if result.status == "optimal" %}
+<div class="alert alert-success mb-4">
+  <h5 class="alert-heading">Solution entière optimale trouvée</h5>
+  <strong>Z* = {{ result.optimal_value }}</strong>
+  &nbsp;&nbsp;
+  {% for var, val in result.solution.items %}
+    <span class="badge bg-success">{{ var|math_var }} = {{ val }}</span>
+  {% endfor %}
+  <div class="small mt-2 text-muted">
+    {{ result.n_nodes }} nœud{{ result.n_nodes|pluralize:"s" }} exploré{{ result.n_nodes|pluralize:"s" }} —
+    incumbent final trouvé au nœud N{{ result.incumbent_node }}.
+  </div>
+</div>
+{% elif result.status == "infeasible" %}
+<div class="alert alert-danger mb-4">
+  <h5 class="alert-heading">Problème entier infaisable</h5>
+  {{ result.message }}
+</div>
+{% elif result.status == "unbounded" %}
+<div class="alert alert-warning mb-4">
+  <h5 class="alert-heading">Problème non borné</h5>
+  {{ result.message }}
+</div>
+{% else %}
+<div class="alert alert-warning mb-4">
+  <h5 class="alert-heading">Exploration interrompue</h5>
+  {{ result.message }}
+  {% if result.optimal_value %}
+  <div class="mt-2">
+    <strong>Incumbent : Z = {{ result.optimal_value }}</strong>
+    {% for var, val in result.solution.items %}
+      <span class="badge bg-success">{{ var|math_var }} = {{ val }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endif %}

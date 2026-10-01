@@ -4,9 +4,9 @@
 {% block navbar_method %}Méthode des deux phases{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
   <h2 class="mb-0">Méthode des deux phases</h2>
-  <a href="{% url 'pb_lineaire:index' %}" class="btn btn-outline-secondary">Nouveau problème</a>
+  {% include "pb_lineaire/_actions.html" %}
 </div>
 
 {% include "pb_lineaire/_problem.html" %}
@@ -20,11 +20,10 @@
 
 <h4 class="mb-3">
   <span class="badge bg-secondary me-2">Phase 1</span>
-  Minimisation des variables artificielles
-  <small class="text-muted fw-normal">({{ result.phase1.var_names|join:", " }})</small>
+  Problème auxiliaire — minimisation de \(\delta\)
 </h4>
 <div class="alert alert-danger small">
-  La valeur optimale de Phase 1 est {{ result.phase1.optimal_value }} &ne; 0 — le problème n'admet aucune solution admissible.
+  À l'optimum de Phase 1, \(\delta\) = {{ result.phase1.optimal_value }} &ne; 0 — le problème n'admet aucune solution admissible.
 </div>
 {% with result=result.phase1 iter_prefix="p1-" %}
   {% include "pb_lineaire/_iterations.html" %}
@@ -46,16 +45,14 @@
 <div class="d-flex align-items-center gap-3 mb-3">
   <h4 class="mb-0">
     <span class="badge bg-info text-dark me-2">Phase 1</span>
-    Minimisation des variables artificielles
+    Problème auxiliaire — minimisation de \(\delta\)
   </h4>
-  <span class="text-muted small">Variables : {{ result.phase1.var_names|join:", " }}</span>
 </div>
 
 <div class="alert alert-info small mb-3">
   <strong>Objectif Phase 1 :</strong>
-  minimiser la somme des variables artificielles
-  ({% for v in result.phase1.var_names %}{% if "δ" in v %}{{ v|math_var }}{% if not forloop.last %} + {% endif %}{% endif %}{% endfor %}).
-  Si le minimum est 0, le problème est admissible et on passe en Phase 2.
+  minimiser l'unique variable artificielle \(\delta\), soit \(\max(-\delta)\).
+  Si \(\delta = 0\) à l'optimum, le problème est admissible et on passe en Phase 2.
 </div>
 
 {% with result=result.phase1 iter_prefix="p1-" %}
@@ -63,7 +60,7 @@
 {% endwith %}
 
 <div class="alert alert-success mb-4">
-  <strong>Phase 1 terminée</strong> — valeur optimale = {{ result.phase1.optimal_value }} = 0.
+  <strong>Phase 1 terminée</strong> — \(\delta = 0\) à l'optimum.
   Le problème est admissible. Base admissible trouvée.
 </div>
 
@@ -73,16 +70,12 @@
     <span class="badge bg-primary me-2">Phase 2</span>
     Résolution du problème original
   </h4>
-  <span class="text-muted small">Variables : {{ result.phase2.var_names|join:", " }}</span>
 </div>
 
 <div class="alert alert-secondary small mb-3">
   <strong>Objectif Phase 2 :</strong>
-  {{ obj_type|upper }} Z =
-  {% for ci in c_display %}
-    {{ ci }} · {{ forloop.counter|math_index:"x" }}{% if not forloop.last %} + {% endif %}
-  {% endfor %}
-  — résolu depuis la base admissible de Phase 1 (variables artificielles supprimées).
+  \({% if std_form %}{{ std_form.objective }}{% else %}{{ objective_tex }}{% endif %}\)
+  — résolu depuis la base admissible de Phase 1 (colonne \(\delta\) supprimée).
 </div>
 
 {% with result=result.phase2 iter_prefix="p2-" %}

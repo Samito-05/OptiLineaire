@@ -4,6 +4,12 @@ Affiche les itérations d'une relaxation LP résolue automatiquement :
   • lp.method == "two_phase" → Phase 1 (auxiliaire δ) puis Phase 2
 Paramètres : lp (résultat solveur), prefix (préfixe unique pour les collapses).
 {% endcomment %}
+{% if lp.omitted_tableaux or lp.omitted_steps %}
+<div class="small text-muted mb-2">
+  Affichage allégé :
+  {% if lp.omitted_steps %}détail du pivotage masqué ({{ lp.omitted_steps }} itération{{ lp.omitted_steps|pluralize }}){% endif %}{% if lp.omitted_steps and lp.omitted_tableaux %} ; {% endif %}{% if lp.omitted_tableaux %}{{ lp.omitted_tableaux }} tableau{{ lp.omitted_tableaux|pluralize:"x" }} non affiché{{ lp.omitted_tableaux|pluralize }}{% endif %}.
+</div>
+{% endif %}
 {% if lp.method == "two_phase" %}
   <div class="lp-phase-tag">Phase 1 — problème auxiliaire (artificielle δ, objectif max −δ)</div>
   {% with result=lp.phase1 iter_prefix=prefix|add:"p1-" %}

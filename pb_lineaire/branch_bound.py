@@ -14,16 +14,18 @@ Schéma du cours :
         fils gauche  : x_j ≤ ⌊x*_j⌋        fils droit : x_j ≥ ⌈x*_j⌉
   6. Sélection du nœud suivant : meilleure borne (best-bound), comme dans le
      pseudo-code du cours (file de priorité).
-  Terminaison : file vide, ou limite de nœuds atteinte (incumbent partiel).
+  Terminaison : file vide, ou limite de nœuds / de temps atteinte (incumbent partiel).
 """
 
 import math
+import time
 from fractions import Fraction
 
-from .simplex import fmt
+from .simplex import fmt, DetailBudget
 from .lp_relax import solve_lp_auto, extract_x
 
-MAX_NODES = 40
+MAX_NODES = 100
+TIME_LIMIT = 8.0      # secondes
 
 
 def _is_integer(v):
@@ -34,11 +36,14 @@ def _frac_part(v):
     return v - Fraction(math.floor(v))
 
 
-def run_branch_and_bound(c_input, A_input, b_input, minimize=False, max_nodes=MAX_NODES):
+def run_branch_and_bound(c_input, A_input, b_input, minimize=False, max_nodes=MAX_NODES,
+                         time_limit=TIME_LIMIT, budget=None):
     n = len(c_input)
     c = [Fraction(v) for v in c_input]
     A = [[Fraction(v) for v in row] for row in A_input]
     b = [Fraction(v) for v in b_input]
+    budget = budget or DetailBudget()
+    deadline = time.monotonic() + time_limit
 
     def disp(z):
         return fmt(-z if minimize else z)
@@ -56,11 +61,14 @@ def run_branch_and_bound(c_input, A_input, b_input, minimize=False, max_nodes=MA
     incumbent = None        # {"value": Fraction, "x": [...], "node": id}
     order = []              # ids dans l'ordre d'exploration
     processed = 0
-    truncated = False
+    truncated = None        # "max_nodes" | "time_limit"
 
     while queue:
         if processed >= max_nodes:
-            truncated = True
+            truncated = "max_nodes"
+            break
+        if processed and time.monotonic() > deadline:
+            truncated = "time_limit"
             break
 
         # --- Sélection best-bound : borne du parent la plus élevée ---
@@ -77,7 +85,7 @@ def run_branch_and_bound(c_input, A_input, b_input, minimize=False, max_nodes=MA
         # --- Relaxation LP du nœud ---
         A_node = [row[:] for row in A] + [extra[0] for extra in node["extra"]]
         b_node = b[:] + [extra[1] for extra in node["extra"]]
-        lp = solve_lp_auto(c, A_node, b_node)
+        lp = solve_lp_auto(c, A_node, b_node, budget=budget)
 
         node["lp"] = lp
         node["lp_method"] = lp["method"]
@@ -103,10 +111,10 @@ def run_branch_and_bound(c_input, A_input, b_input, minimize=False, max_nodes=MA
             # Élaguer ici serait mathématiquement faux (région possiblement
             # admissible) : on interrompt l'exploration avec un statut explicite.
             node["status"] = "error"
-            node["reason"] = "Relaxation LP : nombre maximal d'itérations atteint (cyclage possible)."
+            node["reason"] = "Relaxation LP : nombre maximal d'itérations atteint."
             return _result("max_iter", incumbent, root,
                            [nodes[i] for i in order], processed, minimize, n,
-                           message="Cyclage possible dans une relaxation LP : "
+                           message="Nombre maximal d'itérations atteint dans une relaxation LP : "
                                    "exploration interrompue. Incumbent partiel ci-dessous le cas échéant.")
 
         final = lp["final"]
@@ -195,13 +203,15 @@ def run_branch_and_bound(c_input, A_input, b_input, minimize=False, max_nodes=MA
     # Nœuds jamais explorés (limite atteinte) → marqués comme tels
     for q in queue:
         q["status"] = "unexplored"
-        q["reason"] = "Nœud non exploré (limite de nœuds atteinte)."
+        q["reason"] = "Nœud non exploré (limite atteinte)."
 
     nodes_list = [nodes[i] for i in order]      # nœuds dans l'ordre d'exploration
 
     if truncated:
-        return _result("max_nodes", incumbent, root, nodes_list, processed, minimize, n,
-                       message=f"Limite de {max_nodes} nœuds atteinte. "
+        limit = (f"Limite de {max_nodes} nœuds atteinte. " if truncated == "max_nodes"
+                 else f"Limite de temps ({time_limit:g} s) atteinte après {processed} nœuds. ")
+        return _result(truncated, incumbent, root, nodes_list, processed, minimize, n,
+                       message=limit
                                + ("Meilleure solution entière trouvée (incumbent) ci-dessous."
                                   if incumbent else "Aucune solution entière trouvée."))
 
