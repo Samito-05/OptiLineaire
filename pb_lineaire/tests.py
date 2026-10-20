@@ -499,3 +499,10 @@ class SolveViewTests(SimpleTestCase):
         response = self._post(data)
         self.assertEqual(response.status_code, 200)
         self.assertLess(len(response.content), 15_000_000)
+
+
+class HealthTests(SimpleTestCase):
+    def test_health(self):
+        response = self.client.get("/health")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, b"ok")

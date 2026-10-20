@@ -131,8 +131,19 @@ Par défaut, les réglages conviennent au développement local. Pour un déploie
 | `DJANGO_SECRET_KEY` | Clé secrète — obligatoire quand `DJANGO_DEBUG=0` |
 | `DJANGO_ALLOWED_HOSTS` | Hôtes autorisés, séparés par des virgules (défaut : `localhost,127.0.0.1,[::1]`) |
 
-Avec `DJANGO_DEBUG=0`, `runserver` ne sert plus les fichiers statiques : lancez
-`python manage.py collectstatic` et servez `staticfiles/` par le serveur web.
+Avec `DJANGO_DEBUG=0`, les fichiers statiques sont servis par WhiteNoise après
+`python manage.py collectstatic` (fait automatiquement dans l'image Docker).
+
+### Mise en ligne
+
+L'application est en ligne sur le NAS avec les autres projets, via **[Samito-05/nas-stack](https://github.com/Samito-05/nas-stack)** (tunnel Cloudflare, mises à jour avec `sh deploy.sh`). Ce dépôt fournit l'image : `Dockerfile` (gunicorn, utilisateur non-root, rien n'est écrit sur le disque) et la sonde `/health`.
+
+Test local de l'image de production :
+
+```bash
+cp .env.production.example .env.production   # remplir DJANGO_SECRET_KEY
+docker compose up --build                     # http://127.0.0.1:8000
+```
 
 ---
 
@@ -206,7 +217,7 @@ OptiLineaire/
     ├── lp_relax.py                  # Relaxation LP automatique (Simplexe ou deux phases)
     ├── gomory.py                    # Coupes de Gomory (programmation entière)
     ├── branch_bound.py              # Branch-and-Bound (programmation entière)
-    ├── tests.py                     # 44 tests unitaires
+    ├── tests.py                     # 45 tests unitaires
     │
     ├── templatetags/
     │   └── math_notation.py         # Filtres Django pour la notation mathématique (MathJax)
@@ -239,8 +250,10 @@ OptiLineaire/
 | Package | Version | Rôle |
 |---|---|---|
 | `Django` | 5.2.6 | Framework web Python |
+| `whitenoise` | 6.8.2 | Fichiers statiques en production |
+| `gunicorn` | 23.0.0 | Serveur d'application en production |
 
-> Aucune dépendance externe supplémentaire — tout le calcul (Simplexe, deux phases,
+> Aucune autre dépendance — tout le calcul (Simplexe, deux phases,
 > Gomory, Branch-and-Bound) est implémenté en pur Python avec le module standard `fractions`.
 >
 > Côté navigateur, `static/pb_lineaire/vendor/` embarque Bootstrap 5.3.3 (MIT),
@@ -335,7 +348,7 @@ bascule automatiquement vers le Branch-and-Bound et affiche les deux.
 python manage.py test pb_lineaire
 ```
 
-**44 tests** couvrant les quatre méthodes (optimal, non borné, infaisable, minimisation,
+**45 tests** couvrant les quatre méthodes (optimal, non borné, infaisable, minimisation,
 données fractionnaires, coefficients de coupe entiers, anti-cyclage, budget d'affichage)
 et les vues (routage, validation de la saisie, limites de taille, bascule Gomory → B&B).
 Les méthodes entières ont en outre été validées par comparaison avec une énumération
