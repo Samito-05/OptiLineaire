@@ -14,8 +14,16 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.http import HttpResponse
 from django.urls import path, include
 
+
+def health(request):
+    """Sonde du healthcheck Docker."""
+    return HttpResponse("ok", content_type="text/plain")
+
+
 urlpatterns = [
+    path("health", health, name="health"),
     path("", include("pb_lineaire.urls")),
 ]

@@ -13,7 +13,7 @@
 OptiLineaire/
 ├── manage.py                          # Django management script
 ├── README.md                          # Project overview
-├── requirements.txt                   # Python dependencies (Django==5.2.6)
+├── requirements.txt                   # Python dependencies (Django, whitenoise, gunicorn)
 ├── run.ps1 / run.sh                   # Quick-start scripts
 │
 ├── OptiLineaire/                      # Django project settings
@@ -30,7 +30,7 @@ OptiLineaire/
     ├── lp_relax.py                    # Auto LP-relaxation dispatcher (simplex vs two-phase)
     ├── gomory.py                      # Gomory cutting planes (integer programming)
     ├── branch_bound.py                # Branch-and-Bound (integer programming)
-    ├── tests.py                       # 44 unit tests (all methods + view routing/validation)
+    ├── tests.py                       # 45 unit tests (all methods + view routing/validation + health)
     │
     ├── static/pb_lineaire/
     │   ├── global.css                 # Swiss typographic style, light/dark theme
@@ -175,7 +175,7 @@ Result dict statuses: `optimal`, `unbounded`, `infeasible`, `non_admissible`, `m
 
 ## 🧪 Testing & Validation
 
-- `python manage.py test pb_lineaire` — **44 tests**: simplex (5), anti-cycling & detail budget (3), two-phase (6), Gomory (6), B&B (6), views incl. integer routes, min handling, input validation, size limits, Gomory→B&B fallback, page size (18).
+- `python manage.py test pb_lineaire` — **45 tests**: health probe (1), simplex (5), anti-cycling & detail budget (3), two-phase (6), Gomory (6), B&B (6), views incl. integer routes, min handling, input validation, size limits, Gomory→B&B fallback, page size (18).
 - Key regression tests: Gomory cuts must have integer coefficients; fractional input data; B&B min prune comparator displays `≥`.
 - Audited 2026-06-11: results compared against **brute-force enumeration on 190 random instances** (integer & fractional data) — 0 mismatches; simplex vs two-phase cross-checked on 80 instances; two-phase fuzzed on 400 instances (eq pairs, redundant rows) — 0 crashes.
 - Re-audited 2026-10-01 after the Bland fallback: Gomory and B&B vs brute force on 400 random instances (mixed-sign data) — 0 mismatches; simplex vs two-phase on 600 degenerate-heavy LPs (206 of them triggering Bland) — 0 mismatches.
@@ -206,3 +206,15 @@ Or `./run.sh` / `.\run.ps1`.
 
 **Last Updated:** 2026-10-01
 **Version:** 2.1 (robust input, anti-cycling, bounded output, offline assets)
+
+---
+
+## 🚢 Deployment
+
+Production runs from **Samito-05/nas-stack** (one Cloudflare Tunnel for all projects, `sh deploy.sh`). This repo only provides the image:
+
+- `Dockerfile`: gunicorn, 2 workers, 30 s timeout (solvers are bounded), non-root, `DJANGO_DEBUG=0` by default. Nothing is written to disk (no DB, no sessions), so the container runs read-only.
+- `/health` (in `OptiLineaire/urls.py`) is the healthcheck probe. Keep `localhost` in `DJANGO_ALLOWED_HOSTS`.
+- WhiteNoise serves static files with hashed names (`CompressedManifestStaticFilesStorage`); dev and tests use the plain storage.
+- With `DJANGO_DEBUG=0`: `SECURE_PROXY_SSL_HEADER`, HSTS and secure CSRF cookie. No HTTPS redirect in Django (Cloudflare does it).
+- `docker-compose.yml` is a local test of the production image only.

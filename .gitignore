@@ -43,6 +43,7 @@ collectstatic/
 # Environment files
 .env
 .env.*
+!.env.production.example
 
 # OS / misc
 Thumbs.db

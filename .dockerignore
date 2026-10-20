@@ -1,0 +1,11 @@
+.git
+.env
+.env.*
+.venv
+venv
+doc
+staticfiles
+**/__pycache__
+*.pyc
+run.ps1
+run.sh
