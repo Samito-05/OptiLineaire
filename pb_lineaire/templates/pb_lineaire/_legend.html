@@ -1,8 +1,8 @@
-<!-- Légende -->
-<div class="mt-4 d-flex flex-wrap gap-3 align-items-center small text-muted">
-  <strong>Légende :</strong>
-  <span><span class="legend-box legend-box--lf"></span> Ligne LF</span>
-  <span><span class="legend-box legend-box--entering"></span> Variable entrante</span>
-  <span><span class="legend-box legend-box--leaving"></span> Variable sortante</span>
-  <span><span class="legend-box legend-box--pivot"></span> Pivot</span>
+<!-- Légende des tableaux : chaque repère a une forme, pas seulement une couleur -->
+<div class="legend" role="note" aria-label="Légende des tableaux">
+  <span class="legend__item"><span class="legend-box legend-box--lf">LF</span> ligne LF (filet épais)</span>
+  <span class="legend__item"><span class="legend-box legend-box--entering">▼</span> colonne entrante</span>
+  <span class="legend__item"><span class="legend-box legend-box--leaving">◀</span> ligne sortante</span>
+  <span class="legend__item"><span class="legend-box legend-box--pivot">p</span> pivot (case inversée)</span>
+  {% if show_frac %}<span class="legend__item"><span class="legend-box legend-box--frac">{a}</span> partie fractionnaire</span>{% endif %}
 </div>

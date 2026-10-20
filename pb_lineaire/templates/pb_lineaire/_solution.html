@@ -1,0 +1,15 @@
+{% load math_notation %}
+{% comment %}
+Bloc solution commun à toutes les pages de résultats.
+Paramètres : heading, value (Z*), solution (dict variable → valeur), label (défaut « Z* »).
+{% endcomment %}
+<section class="solution" aria-labelledby="solutionTitle">
+  <h2 id="solutionTitle">{{ heading|default:"Solution optimale" }}</h2>
+  <p class="solution__z">{{ label|default:"Z*" }} = {{ value }}</p>
+  <dl class="solution__vars">
+    {% for var, val in solution.items %}
+    <div><dt>{{ var|math_var }}</dt><dd>{{ val }}</dd></div>
+    {% endfor %}
+  </dl>
+  {% if note %}<p class="muted small">{{ note }}</p>{% endif %}
+</section>

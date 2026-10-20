@@ -1,39 +1,27 @@
 {% load math_notation %}
 <!-- Résultat global -->
 {% if result.status == "optimal" %}
-<div class="alert alert-success mb-4">
-  <h5 class="alert-heading">Solution entière optimale trouvée</h5>
-  <strong>Z* = {{ result.optimal_value }}</strong>
-  &nbsp;&nbsp;
-  {% for var, val in result.solution.items %}
-    <span class="badge bg-success">{{ var|math_var }} = {{ val }}</span>
-  {% endfor %}
-  <div class="small mt-2 text-muted">
-    {{ result.n_nodes }} nœud{{ result.n_nodes|pluralize:"s" }} exploré{{ result.n_nodes|pluralize:"s" }} —
-    incumbent final trouvé au nœud N{{ result.incumbent_node }}.
-  </div>
-</div>
+{% include "pb_lineaire/_solution.html" with heading="Solution entière optimale" value=result.optimal_value solution=result.solution %}
+<p class="muted small">
+  {{ result.n_nodes }} nœud{{ result.n_nodes|pluralize:"s" }} exploré{{ result.n_nodes|pluralize:"s" }},
+  incumbent final trouvé au nœud N{{ result.incumbent_node }}.
+</p>
 {% elif result.status == "infeasible" %}
-<div class="alert alert-danger mb-4">
-  <h5 class="alert-heading">Problème entier infaisable</h5>
-  {{ result.message }}
+<div class="note note--error" role="alert">
+  <p class="note__title">Problème entier infaisable</p>
+  <p>{{ result.message }}</p>
 </div>
 {% elif result.status == "unbounded" %}
-<div class="alert alert-warning mb-4">
-  <h5 class="alert-heading">Problème non borné</h5>
-  {{ result.message }}
+<div class="note note--warn">
+  <p class="note__title">Problème non borné</p>
+  <p>{{ result.message }}</p>
 </div>
 {% else %}
-<div class="alert alert-warning mb-4">
-  <h5 class="alert-heading">Exploration interrompue</h5>
-  {{ result.message }}
-  {% if result.optimal_value %}
-  <div class="mt-2">
-    <strong>Incumbent : Z = {{ result.optimal_value }}</strong>
-    {% for var, val in result.solution.items %}
-      <span class="badge bg-success">{{ var|math_var }} = {{ val }}</span>
-    {% endfor %}
-  </div>
-  {% endif %}
+<div class="note note--warn">
+  <p class="note__title">Exploration interrompue</p>
+  <p>{{ result.message }}</p>
 </div>
+{% if result.optimal_value %}
+{% include "pb_lineaire/_solution.html" with heading="Meilleure solution entière trouvée (incumbent)" label="Z" value=result.optimal_value solution=result.solution %}
+{% endif %}
 {% endif %}

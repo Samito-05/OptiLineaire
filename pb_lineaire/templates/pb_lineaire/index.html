@@ -1,123 +1,134 @@
 {% extends "pb_lineaire/base.html" %}
 {% block title %}Saisie du problème — OptiLinéaire{% endblock %}
 {% block navbar_method %}Sélection automatique{% endblock %}
+{# Pas de MathJax ici : les indices sont en HTML, la saisie reste instantanée #}
+{% block mathjax %}{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-lg-9">
+<div class="stack">
 
-    <h2 class="mb-1" id="pageTitle">Résolution</h2>
-    <p class="text-muted mb-4" id="pageDesc">
-      La méthode est choisie automatiquement : <strong>Simplexe</strong> si l'origine est admissible,
-      <strong>deux phases</strong> sinon. Pour un problème en <strong>variables entières</strong>,
-      choisissez entre <strong>coupes de Gomory</strong> et <strong>Branch-and-Bound</strong>.
-    </p>
+  <div class="page-head">
+    <div class="stack stack--tight">
+      <h1 id="pageTitle">Résolution d'un programme linéaire</h1>
+      <p class="muted" id="pageDesc">
+        La méthode est choisie automatiquement : <strong>Simplexe</strong> si l'origine est admissible,
+        <strong>deux phases</strong> sinon. Pour des <strong>variables entières</strong>,
+        choisissez entre <strong>coupes de Gomory</strong> et <strong>Branch-and-Bound</strong>.
+      </p>
+    </div>
+  </div>
 
-    {% if error %}
-    <div class="alert alert-danger">{{ error }}</div>
-    {% endif %}
+  {% if error %}
+  <div class="note note--error" role="alert" id="formError" data-error-field="{{ error_field|default:'' }}">
+    <p class="note__title">Saisie à corriger</p>
+    <p>{{ error }}</p>
+  </div>
+  {% endif %}
 
-    <form method="post" action="{% url 'pb_lineaire:solve' %}" id="mainForm" autocomplete="off">
-      {% csrf_token %}
+  <form method="post" action="{% url 'pb_lineaire:solve' %}" id="mainForm" class="stack" autocomplete="off" novalidate>
+    {% csrf_token %}
 
-      <!-- Paramètres généraux -->
-      <div class="card mb-4 shadow-sm">
-        <div class="card-header d-flex align-items-center justify-content-between">
-          <span class="fw-bold">Paramètres</span>
-          <span class="auto-chip" id="methodPreview">Méthode : automatique</span>
-        </div>
-        <div class="card-body row g-3">
-          <div class="col-md-3">
-            <label class="form-label">Nb de variables</label>
-            <select name="n_vars" id="n_vars" class="form-select">
+    <!-- Paramètres généraux -->
+    <section class="panel" aria-labelledby="paramsTitle">
+      <div class="panel__head">
+        <h2 id="paramsTitle">Paramètres</h2>
+        <p class="method-preview" id="methodPreview" aria-live="polite">Méthode : automatique</p>
+      </div>
+      <div class="panel__body">
+        <div class="params">
+          <div class="field">
+            <label class="field__label" for="n_vars">Nombre de variables</label>
+            <select name="n_vars" id="n_vars" class="select">
               {% for i in var_choices %}
               <option value="{{ i }}">{{ i }}</option>
               {% endfor %}
             </select>
           </div>
-          <div class="col-md-3">
-            <label class="form-label">Nb de contraintes</label>
-            <select name="n_constraints" id="n_constraints" class="form-select">
+          <div class="field">
+            <label class="field__label" for="n_constraints">Nombre de contraintes</label>
+            <select name="n_constraints" id="n_constraints" class="select">
               {% for i in constraint_choices %}
               <option value="{{ i }}">{{ i }}</option>
               {% endfor %}
             </select>
           </div>
-          <div class="col-md-3">
-            <label class="form-label">Type d'objectif</label>
-            <select name="obj_type" id="obj_type" class="form-select">
+          <div class="field">
+            <label class="field__label" for="obj_type">Objectif</label>
+            <select name="obj_type" id="obj_type" class="select">
               <option value="max">Maximisation</option>
               <option value="min">Minimisation</option>
             </select>
           </div>
-          <div class="col-md-3" style="align-self:flex-end">
-            <button type="button" class="btn btn-secondary w-100" id="randomBtn">Remplir aléatoire</button>
-          </div>
+        </div>
 
-          <!-- Variables entières -->
-          <div class="col-12">
-            <div class="integer-panel" id="integerPanel">
-              <div class="form-check form-switch mb-0">
-                <input class="form-check-input" type="checkbox" role="switch" id="integerSwitch" name="integer">
-                <label class="form-check-label fw-bold" for="integerSwitch">
-                  Variables entières &nbsp;<span class="text-muted fw-normal">(\(x_j \in \mathbb{Z}\) — programmation entière)</span>
-                </label>
-              </div>
-              <div class="integer-methods mt-3" id="integerMethods" hidden>
-                <div class="small text-muted mb-2">
-                  Deux méthodes du cours s'appliquent — ce choix vous appartient :
-                </div>
-                <div class="d-flex flex-column flex-md-row gap-2">
-                  <label class="int-method-option">
-                    <input type="radio" name="int_method" value="gomory" checked>
-                    <span class="int-method-option__body">
-                      <span class="int-method-option__title">Coupes de Gomory</span>
-                      <span class="int-method-option__desc">Relaxation LP + coupes successives dérivées du tableau optimal, jusqu'à une solution entière.</span>
-                    </span>
-                  </label>
-                  <label class="int-method-option">
-                    <input type="radio" name="int_method" value="bb">
-                    <span class="int-method-option__body">
-                      <span class="int-method-option__title">Branch-and-Bound</span>
-                      <span class="int-method-option__desc">Arbre d'exploration : branchement sur les variables fractionnaires, bornes et élagage.</span>
-                    </span>
-                  </label>
-                </div>
-              </div>
+        <!-- Variables entières -->
+        <div id="integerPanel">
+          <label class="check">
+            <input type="checkbox" role="switch" id="integerSwitch" name="integer">
+            <span><strong>Variables entières</strong> <span class="muted">(<i>x</i><sub>j</sub> ∈ ℤ, programmation entière)</span></span>
+          </label>
+          <div id="integerMethods" class="stack stack--tight" hidden>
+            <p class="small muted">Deux méthodes du cours s'appliquent, à vous de choisir :</p>
+            <div class="int-methods">
+              <label class="int-method-option">
+                <input type="radio" name="int_method" value="gomory" checked>
+                <span>
+                  <span class="int-method-option__title">Coupes de Gomory</span>
+                  <span class="int-method-option__desc">Relaxation LP puis coupes successives tirées du tableau optimal, jusqu'à une solution entière.</span>
+                </span>
+              </label>
+              <label class="int-method-option">
+                <input type="radio" name="int_method" value="bb">
+                <span>
+                  <span class="int-method-option__title">Branch-and-Bound</span>
+                  <span class="int-method-option__desc">Arbre d'exploration : branchement sur les variables fractionnaires, bornes et élagage.</span>
+                </span>
+              </label>
             </div>
           </div>
         </div>
       </div>
+    </section>
 
-      <!-- Fonction objectif -->
-      <div class="card mb-4 shadow-sm">
-        <div class="card-header fw-bold">Fonction objectif &nbsp;<span id="obj_label" class="fw-normal text-muted">max Z =</span></div>
-        <div class="card-body">
-          <div id="obj_fields" class="d-flex flex-wrap gap-3 align-items-center"></div>
-          <div class="form-text mt-3">Valeurs acceptées : entiers, décimaux (2.5 ou 2,5) et fractions (1/3).</div>
+    <!-- Fonction objectif -->
+    <section class="panel" aria-labelledby="objTitle">
+      <div class="panel__head">
+        <h2 id="objTitle">Fonction objectif <span id="obj_label" class="muted">max Z =</span></h2>
+      </div>
+      <div class="panel__body">
+        <div id="obj_fields" class="obj-fields"></div>
+      </div>
+    </section>
+
+    <!-- Contraintes -->
+    <section class="panel" aria-labelledby="consTitle">
+      <div class="panel__head">
+        <h2 id="consTitle">Contraintes</h2>
+        <p class="small muted">Opérateur : touches <kbd>&lt;</kbd> <kbd>&gt;</kbd> <kbd>=</kbd></p>
+      </div>
+      <div class="panel__body">
+        <div class="table-scroll">
+          <table class="grid-input" id="constraints_table">
+            <thead id="constraints_head"></thead>
+            <tbody id="constraints_body"></tbody>
+          </table>
         </div>
+        <p class="small muted">
+          Valeurs acceptées : entiers, décimaux (2.5 ou 2,5) et fractions (1/3).
+          <kbd>Entrée</kbd> passe à la case suivante, <kbd>↑</kbd> <kbd>↓</kbd> changent de ligne,
+          <kbd>Ctrl</kbd>+<kbd>Entrée</kbd> résout.
+        </p>
+        <p class="input-hint small" id="inputHint" aria-live="polite"></p>
       </div>
+    </section>
 
-      <!-- Contraintes -->
-      <div class="card mb-4 shadow-sm">
-        <div class="card-header fw-bold">Contraintes &nbsp;<span class="fw-normal text-muted">≤, ≥ ou = au choix</span></div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-bordered align-middle text-center" id="constraints_table">
-              <thead id="constraints_head" class="table-dark"></thead>
-              <tbody id="constraints_body"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+    <div class="cluster">
+      <button type="submit" class="btn btn--primary">Résoudre</button>
+      <button type="button" class="btn" id="randomBtn">Remplir aléatoirement</button>
+      <button type="button" class="btn btn--quiet" id="resetBtn">Réinitialiser</button>
+    </div>
+  </form>
 
-      <div class="d-flex flex-wrap gap-2">
-        <button type="submit" class="btn btn-primary btn-lg px-5">Résoudre</button>
-        <button type="button" class="btn btn-secondary btn-lg" id="resetBtn">Réinitialiser</button>
-      </div>
-    </form>
-
-  </div>
 </div>
 {% endblock %}
 
@@ -127,7 +138,8 @@
   const STORAGE_KEY = 'optilineaire-problem';
   // Entier, décimal (point ou virgule) ou fraction p/q — le serveur revalide.
   const NUMBER_PATTERN = '\\s*[+\\-−]?(\\d+([.,]\\d*)?|[.,]\\d+)([eE][+\\-]?\\d+)?\\s*|\\s*[+\\-−]?\\d+\\s*/\\s*\\d+\\s*';
-  const NUMBER_HINT = 'Nombre attendu : entier, décimal (2.5) ou fraction (1/3)';
+  const NUMBER_HINT = 'nombre attendu : entier, décimal (2.5) ou fraction (1/3)';
+  const OP_KEYS = { '<': 'le', '>': 'ge', '=': 'eq' };
 
   const form           = document.getElementById('mainForm');
   const nSelect        = document.getElementById('n_vars');
@@ -140,26 +152,32 @@
   const objDiv         = document.getElementById('obj_fields');
   const thead          = document.getElementById('constraints_head');
   const tbody          = document.getElementById('constraints_body');
+  const inputHint      = document.getElementById('inputHint');
+  const errorBox       = document.getElementById('formError');
 
-  const DEFAULT_STATE = { n: 2, m: 2, objType: 'max', integer: false, intMethod: 'gomory', c: [], A: [], b: [], ops: [] };
+  function defaultState() {
+    return { n: 2, m: 2, objType: 'max', integer: false, intMethod: 'gomory', c: [], A: [], b: [], ops: [] };
+  }
+
+  // Modèle complet de la saisie : réduire n ou m masque des cases sans effacer leurs valeurs.
+  let model = defaultState();
 
   function field(name) { return form.elements[name]; }
 
   // ── État du formulaire : lecture / sauvegarde / restauration ──
   function readState() {
-    const state = {
-      n: parseInt(nSelect.value), m: parseInt(mSelect.value),
-      objType: objSelect.value, integer: integerSwitch.checked,
-      intMethod: form.elements['int_method'].value,
-      c: [], A: [], b: [], ops: [],
-    };
-    for (let j = 0; field('c_' + j); j++) state.c.push(field('c_' + j).value);
+    const state = model;
+    state.n = parseInt(nSelect.value);
+    state.m = parseInt(mSelect.value);
+    state.objType = objSelect.value;
+    state.integer = integerSwitch.checked;
+    state.intMethod = form.elements['int_method'].value;
+    for (let j = 0; field('c_' + j); j++) state.c[j] = field('c_' + j).value;
     for (let i = 0; field('b_' + i); i++) {
-      const row = [];
-      for (let j = 0; field('a_' + i + '_' + j); j++) row.push(field('a_' + i + '_' + j).value);
-      state.A.push(row);
-      state.b.push(field('b_' + i).value);
-      state.ops.push(field('op_' + i).value);
+      const row = state.A[i] = state.A[i] || [];
+      for (let j = 0; field('a_' + i + '_' + j); j++) row[j] = field('a_' + i + '_' + j).value;
+      state.b[i] = field('b_' + i).value;
+      state.ops[i] = field('op_' + i).value;
     }
     return state;
   }
@@ -173,27 +191,23 @@
       const saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY));
       if (saved && nSelect.querySelector('option[value="' + saved.n + '"]')
                 && mSelect.querySelector('option[value="' + saved.m + '"]')) {
-        return Object.assign({}, DEFAULT_STATE, saved);
+        return Object.assign(defaultState(), saved);
       }
     } catch (e) {}
-    return DEFAULT_STATE;
+    return defaultState();
   }
 
-  function typeset(nodes) {
-    if (window.MathJax && MathJax.typesetPromise) {
-      MathJax.typesetPromise(nodes).catch(err => console.log(err));
-    }
-  }
+  function varHtml(letter, index) { return '<i>' + letter + '</i><sub>' + index + '</sub>'; }
 
-  function numberInput(name, value, className) {
+  function numberInput(name, value, label) {
     const input = document.createElement('input');
     input.type = 'text';
+    input.inputMode = 'decimal';
     input.name = name;
-    input.className = 'form-control ' + className;
+    input.className = 'input input--coef';
     input.value = value === undefined || value === '' ? '0' : value;
     input.pattern = NUMBER_PATTERN;
-    input.title = NUMBER_HINT;
-    input.setAttribute('aria-label', name);
+    input.setAttribute('aria-label', label);
     input.addEventListener('focus', () => input.select());
     return input;
   }
@@ -206,55 +220,56 @@
 
     objDiv.textContent = '';
     for (let j = 0; j < n; j++) {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'd-flex align-items-center gap-1';
-      wrapper.appendChild(numberInput('c_' + j, state.c[j], 'input-width-coef text-center'));
+      const term = document.createElement('span');
+      term.className = 'obj-term';
+      term.appendChild(numberInput('c_' + j, state.c[j], 'Objectif, coefficient de x' + (j + 1)));
       const label = document.createElement('span');
-      label.className = 'text-muted';
-      label.textContent = '· \\(x_{' + (j + 1) + '}\\)' + (j < n - 1 ? ' +' : '');
-      wrapper.appendChild(label);
-      objDiv.appendChild(wrapper);
+      label.innerHTML = '· ' + varHtml('x', j + 1) + (j < n - 1 ? ' +' : '');
+      term.appendChild(label);
+      objDiv.appendChild(term);
     }
 
-    let head = '<tr><th>Contrainte</th>';
-    for (let j = 0; j < n; j++) head += '<th>\\(x_{' + (j + 1) + '}\\)</th>';
-    thead.innerHTML = head + '<th>Opérateur</th><th>\\(b\\)</th></tr>';
+    let head = '<tr><th scope="col" class="row-head"><span class="visually-hidden">Contrainte</span></th>';
+    for (let j = 0; j < n; j++) head += '<th scope="col">' + varHtml('x', j + 1) + '</th>';
+    thead.innerHTML = head + '<th scope="col">Op.</th><th scope="col"><i>b</i></th></tr>';
 
     tbody.textContent = '';
     for (let i = 0; i < m; i++) {
       const tr = document.createElement('tr');
-      const name = document.createElement('td');
-      name.className = 'fw-bold text-muted';
-      name.textContent = '\\(C_{' + (i + 1) + '}\\)';
+      const name = document.createElement('th');
+      name.scope = 'row';
+      name.className = 'row-head';
+      name.innerHTML = varHtml('C', i + 1);
       tr.appendChild(name);
 
       const row = state.A[i] || [];
       for (let j = 0; j < n; j++) {
         const td = document.createElement('td');
-        td.appendChild(numberInput('a_' + i + '_' + j, row[j], 'form-control-sm text-center input-width-constraint-coef'));
+        td.appendChild(numberInput('a_' + i + '_' + j, row[j], 'C' + (i + 1) + ', coefficient de x' + (j + 1)));
         tr.appendChild(td);
       }
 
       const opCell = document.createElement('td');
       const op = document.createElement('select');
       op.name = 'op_' + i;
-      op.className = 'form-select form-select-sm op-select';
-      op.setAttribute('aria-label', 'Opérateur de la contrainte ' + (i + 1));
+      op.className = 'select op-select';
+      op.setAttribute('aria-label', 'C' + (i + 1) + ', opérateur');
       [['le', '≤'], ['ge', '≥'], ['eq', '=']].forEach(([value, text]) => op.add(new Option(text, value)));
       op.value = state.ops[i] || 'le';
       opCell.appendChild(op);
       tr.appendChild(opCell);
 
       const bCell = document.createElement('td');
-      bCell.appendChild(numberInput('b_' + i, state.b[i], 'form-control-sm text-center input-width-constraint-b'));
+      bCell.appendChild(numberInput('b_' + i, state.b[i], 'C' + (i + 1) + ', second membre'));
       tr.appendChild(bCell);
       tbody.appendChild(tr);
     }
 
-    typeset([objDiv, thead, tbody]);
+    updateHint();
   }
 
   function applyState(state) {
+    model = state;
     nSelect.value = state.n;
     mSelect.value = state.m;
     objSelect.value = state.objType;
@@ -290,6 +305,12 @@
     if (navbarText) navbarText.textContent = navbar;
   }
 
+  // Message unique sous la grille : nomme la première case invalide
+  function updateHint() {
+    const bad = form.querySelector('.input:invalid');
+    inputHint.textContent = bad ? bad.getAttribute('aria-label') + ' : ' + NUMBER_HINT + '.' : '';
+  }
+
   function fillRandom() {
     const state = readState();
     const rand = (min, max) => String(Math.floor(Math.random() * (max - min + 1)) + min);
@@ -301,16 +322,64 @@
     saveState();
   }
 
+  // ── Clavier : Entrée = case suivante, ↑/↓ = ligne voisine, < > = = opérateur ──
+  function dataFields() {
+    return Array.from(form.querySelectorAll('#obj_fields .input, #constraints_body .input, #constraints_body .select'));
+  }
+
+  form.addEventListener('keydown', (e) => {
+    const el = e.target;
+    const isData = el.matches('#obj_fields .input, #constraints_body .input, #constraints_body .select');
+    if (!isData) return;
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (e.ctrlKey || e.metaKey) {
+        form.requestSubmit();
+        return;
+      }
+      const fields = dataFields();
+      const next = fields[fields.indexOf(el) + 1];
+      (next || form.querySelector('[type="submit"]')).focus();
+      return;
+    }
+
+    if (el.tagName === 'SELECT' && OP_KEYS[e.key]) {
+      e.preventDefault();
+      el.value = OP_KEYS[e.key];
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      return;
+    }
+
+    if (el.tagName === 'INPUT' && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      const td = el.closest('td');
+      const tr = el.closest('tr');
+      if (!td || !tr) return;
+      const target = e.key === 'ArrowUp' ? tr.previousElementSibling : tr.nextElementSibling;
+      const cell = target && target.children[td.cellIndex];
+      const input = cell && cell.querySelector('.input');
+      if (input) { e.preventDefault(); input.focus(); }
+    }
+  });
+
   // ── Événements ──
   [nSelect, mSelect, objSelect].forEach(el =>
     el.addEventListener('change', () => { buildForm(readState()); updateMethodPreview(); }));
-  form.addEventListener('input', () => { updateMethodPreview(); saveState(); });
+  form.addEventListener('input', (e) => {
+    if (e.target.getAttribute('aria-invalid')) e.target.removeAttribute('aria-invalid');
+    updateMethodPreview(); updateHint(); saveState();
+  });
   form.addEventListener('change', () => { updateMethodPreview(); saveState(); });
-  form.addEventListener('submit', saveState);
+  form.addEventListener('submit', (e) => {
+    saveState();
+    // Validation douce : on bloque l'envoi et on montre la première case fautive
+    const bad = form.querySelector('.input:invalid');
+    if (bad) { e.preventDefault(); updateHint(); bad.focus(); }
+  });
   document.getElementById('randomBtn').addEventListener('click', fillRandom);
   document.getElementById('resetBtn').addEventListener('click', () => {
     try { sessionStorage.removeItem(STORAGE_KEY); } catch (e) {}
-    applyState(DEFAULT_STATE);
+    applyState(defaultState());
   });
 
   // ── Init : « Nouveau problème » (?new=1) repart de zéro, sinon on restaure ──
@@ -319,6 +388,14 @@
     history.replaceState(null, '', location.pathname);
   }
   applyState(loadState());
+
+  // Erreur renvoyée par le serveur : signalée sur la case concernée
+  const errorField = errorBox && errorBox.dataset.errorField && field(errorBox.dataset.errorField);
+  if (errorField) {
+    errorField.setAttribute('aria-invalid', 'true');
+    errorField.setAttribute('aria-describedby', 'formError');
+    errorField.focus();
+  }
 })();
 </script>
 {% endblock %}

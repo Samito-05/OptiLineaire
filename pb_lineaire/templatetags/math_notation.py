@@ -61,3 +61,21 @@ def math_index(value, letter="x"):
     3|math_index:"x"  →  <i>x</i><sub>3</sub>
     """
     return mark_safe(_subscript(letter, value))
+
+
+_FRACTION = re.compile(r"\b(\d+)/(\d+)\b")
+_FORMULA_SYMBOLS = {"·": r"\,", "−": "-", "≥": r"\ge ", "≤": r"\le "}
+
+
+@register.filter
+def math_formula(value):
+    """
+    Convertit une formule entière (coupes de Gomory) en une expression TeX inline.
+    "x2 − 1/8·y1 ≥ 3/2" → "\\(x_{2} - \\frac{1}{8}\\,y_{1} \\ge 3/2\\)" (fractions en \\frac)
+    """
+    text = _FRACTION.sub(r"\\frac{\1}{\2}", str(value))
+    text = _TEXT_VAR.sub(lambda m: f"{_sym(m.group(1))}_{{{m.group(2)}}}", text)
+    text = _BARE_DELTA.sub(r"\\delta ", text)
+    for symbol, tex in _FORMULA_SYMBOLS.items():
+        text = text.replace(symbol, tex)
+    return mark_safe(f"\\({text}\\)")

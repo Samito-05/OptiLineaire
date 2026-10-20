@@ -4,16 +4,16 @@
 {% block navbar_method %}Branch-and-Bound{% endblock %}
 
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-  <h2 class="mb-0">Branch-and-Bound</h2>
+<div class="stack">
+<div class="page-head">
+  <h1>Branch-and-Bound</h1>
   {% include "pb_lineaire/_actions.html" %}
 </div>
 
-{% include "pb_lineaire/_problem.html" %}
-
 {% include "pb_lineaire/_bb_summary.html" %}
 
-{% include "pb_lineaire/_bb_body.html" %}
+{% include "pb_lineaire/_problem.html" %}
 
-{% include "pb_lineaire/_legend.html" %}
+{% include "pb_lineaire/_bb_body.html" %}
+</div>
 {% endblock %}

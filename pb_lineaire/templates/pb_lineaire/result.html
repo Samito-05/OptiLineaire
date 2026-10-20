@@ -1,47 +1,40 @@
 {% extends "pb_lineaire/base.html" %}
 {% load math_notation %}
-{% block title %}Résolution — OptiLinéaire{% endblock %}
+{% block title %}Simplexe — OptiLinéaire{% endblock %}
 {% block navbar_method %}Méthode du Simplexe{% endblock %}
 
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-  <h2 class="mb-0">Résolution — Méthode du Simplexe</h2>
+<div class="stack">
+<div class="page-head">
+  <h1>Méthode du Simplexe</h1>
   {% include "pb_lineaire/_actions.html" %}
 </div>
 
-{% include "pb_lineaire/_problem.html" %}
-
 {% if result.status == "non_admissible" %}
-<div class="alert alert-danger">
-  <strong>Condition d'admissibilité non satisfaite</strong><br>
-  {{ result.message }}
+<div class="note note--error" role="alert">
+  <p class="note__title">Condition d'admissibilité non satisfaite</p>
+  <p>{{ result.message }}</p>
 </div>
-
 {% elif result.status == "unbounded" %}
-<div class="alert alert-warning">
-  <strong>Problème non borné</strong><br>
-  {{ result.message }}
+<div class="note note--warn">
+  <p class="note__title">Problème non borné</p>
+  <p>{{ result.message }}</p>
 </div>
-{% include "pb_lineaire/_iterations.html" %}
-
 {% elif result.status == "max_iter" %}
-<div class="alert alert-warning">
-  <strong>Nombre maximal d'itérations atteint</strong><br>
-  {{ result.message }}
+<div class="note note--warn">
+  <p class="note__title">Nombre maximal d'itérations atteint</p>
+  <p>{{ result.message }}</p>
 </div>
-{% include "pb_lineaire/_iterations.html" %}
-
 {% else %}
-<div class="alert alert-success mb-4">
-  <h5 class="alert-heading">Solution optimale trouvée</h5>
-  <strong>Z* = {{ result.optimal_value }}</strong>
-  &nbsp;&nbsp;
-  {% for var, val in result.solution.items %}
-    <span class="badge bg-success">{{ var|math_var }} = {{ val }}</span>
-  {% endfor %}
-</div>
-{% include "pb_lineaire/_iterations.html" %}
+{% include "pb_lineaire/_solution.html" with value=result.optimal_value solution=result.solution %}
 {% endif %}
 
+{% include "pb_lineaire/_problem.html" %}
+
+{% if result.status != "non_admissible" %}
+<h2 class="section-head">Tableaux successifs</h2>
 {% include "pb_lineaire/_legend.html" %}
+{% include "pb_lineaire/_iterations.html" with toc=True %}
+{% endif %}
+</div>
 {% endblock %}

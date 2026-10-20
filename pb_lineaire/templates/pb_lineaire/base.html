@@ -4,19 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}OptiLinéaire{% endblock %}</title>
-  <link href="{% static 'pb_lineaire/vendor/bootstrap.min.css' %}" rel="stylesheet">
   <link href="{% static 'pb_lineaire/vendor/fonts.css' %}" rel="stylesheet">
   <link href="{% static 'pb_lineaire/global.css' %}" rel="stylesheet">
   <script>
-    // Appliquer le thème avant le premier rendu pour éviter le flash
+    // Appliquer thème et mode projection avant le premier rendu pour éviter le flash
     (function () {
-      var saved = null;
-      try { saved = localStorage.getItem('optilineaire-theme'); } catch (e) {}
+      var root = document.documentElement, saved = null, projection = null;
+      try {
+        saved = localStorage.getItem('optilineaire-theme');
+        projection = localStorage.getItem('optilineaire-projection');
+      } catch (e) {}
       var dark = saved ? saved === 'dark'
                        : window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      root.setAttribute('data-theme', dark ? 'dark' : 'light');
+      if (/[?&]projection=1\b/.test(location.search)) projection = 'on';
+      root.setAttribute('data-projection', projection === 'on' ? 'on' : 'off');
     })();
   </script>
+  {% block mathjax %}
   <script>
     window.MathJax = {
       tex: {
@@ -30,60 +35,71 @@
     };
   </script>
   <script id="MathJax-script" async src="{% static 'pb_lineaire/vendor/mathjax-tex-svg.js' %}"></script>
+  {% endblock %}
 </head>
 <body>
 
-<nav class="navbar navbar-dark mb-4">
+<header class="topbar">
   <div class="container">
-    <a class="navbar-brand" href="{% url 'pb_lineaire:index' %}">OptiLinéaire</a>
-    <div class="d-flex align-items-center gap-3">
-      <span class="navbar-text" id="navbarMethodText">{% block navbar_method %}{% endblock %}</span>
-      <button type="button" class="btn btn-sm btn-outline-light theme-toggle" id="themeToggle" aria-pressed="false">
-        Mode sombre
-      </button>
+    <a class="topbar__brand" href="{% url 'pb_lineaire:index' %}">OptiLinéaire</a>
+    <div class="cluster">
+      <span class="topbar__method" id="navbarMethodText">{% block navbar_method %}{% endblock %}</span>
+      <button type="button" class="btn btn--quiet" id="projectionToggle" aria-pressed="false">Projection</button>
+      <button type="button" class="btn btn--quiet" id="themeToggle" aria-pressed="false">Mode sombre</button>
     </div>
   </div>
-</nav>
+</header>
 
-<div class="container pb-5">
+<main class="container page">
   {% block content %}{% endblock %}
-</div>
+</main>
 
-<script src="{% static 'pb_lineaire/vendor/bootstrap.bundle.min.js' %}"></script>
 <script>
-/* ── Thème clair / sombre ── */
+/* ── Thème clair / sombre et mode projection (préférences mémorisées) ── */
 (function () {
-  const storageKey = 'optilineaire-theme';
   const root = document.documentElement;
-  const toggle = document.getElementById('themeToggle');
 
-  function systemPrefersDark() {
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  }
-
-  function applyTheme(theme) {
-    root.setAttribute('data-theme', theme);
-    if (toggle) {
-      const isDark = theme === 'dark';
-      toggle.textContent = isDark ? 'Mode clair' : 'Mode sombre';
-      toggle.setAttribute('aria-pressed', String(isDark));
-      toggle.classList.toggle('btn-outline-light', !isDark);
-      toggle.classList.toggle('btn-light', isDark);
+  function setupToggle(id, key, attr, isOn, labels) {
+    const toggle = document.getElementById(id);
+    if (!toggle) return;
+    function render() {
+      const on = isOn();
+      toggle.setAttribute('aria-pressed', String(on));
+      if (labels) toggle.textContent = on ? labels[1] : labels[0];
     }
-  }
-
-  let savedTheme = null;
-  try { savedTheme = localStorage.getItem(storageKey); } catch (e) {}
-  const initialTheme = savedTheme || (systemPrefersDark() ? 'dark' : 'light');
-  applyTheme(initialTheme);
-
-  if (toggle) {
     toggle.addEventListener('click', function () {
-      const nextTheme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      try { localStorage.setItem(storageKey, nextTheme); } catch (e) {}
-      applyTheme(nextTheme);
+      const next = attr.next();
+      try { localStorage.setItem(key, next); } catch (e) {}
+      root.setAttribute(attr.name, next);
+      render();
     });
+    render();
   }
+
+  setupToggle('themeToggle', 'optilineaire-theme',
+    { name: 'data-theme', next: () => root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark' },
+    () => root.getAttribute('data-theme') === 'dark', ['Mode sombre', 'Mode clair']);
+
+  setupToggle('projectionToggle', 'optilineaire-projection',
+    { name: 'data-projection', next: () => root.getAttribute('data-projection') === 'on' ? 'off' : 'on' },
+    () => root.getAttribute('data-projection') === 'on');
+
+  // Impression : clair, explications visibles, tous les repliables ouverts ; état rétabli après
+  let saved = null;
+  window.addEventListener('beforeprint', () => {
+    const closed = Array.from(document.querySelectorAll('details:not([open])'));
+    saved = { theme: root.getAttribute('data-theme'), projection: root.getAttribute('data-projection'), closed };
+    root.setAttribute('data-theme', 'light');
+    root.setAttribute('data-projection', 'off');
+    closed.forEach(d => { d.open = true; });
+  });
+  window.addEventListener('afterprint', () => {
+    if (!saved) return;
+    root.setAttribute('data-theme', saved.theme);
+    root.setAttribute('data-projection', saved.projection);
+    saved.closed.forEach(d => { d.open = false; });
+    saved = null;
+  });
 })();
 </script>
 {% block extra_js %}{% endblock %}

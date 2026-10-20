@@ -34,10 +34,10 @@ OptiLineaire/
     │
     ├── static/pb_lineaire/
     │   ├── global.css                 # Swiss typographic style, light/dark theme
-    │   └── vendor/                    # Bootstrap 5.3.3, MathJax 3.2.2 (tex-svg), fonts — no CDN
+    │   └── vendor/                    # MathJax 3.2.2 (tex-svg), fonts — no CDN
     │
     ├── templates/pb_lineaire/
-    │   ├── base.html                  # Bootstrap 5 + MathJax (local vendor files) + theme toggle
+    │   ├── base.html                  # MathJax (local vendor file) + theme and projection toggles
     │   ├── index.html                 # Input form (integer switch + Gomory/B&B choice)
     │   ├── result.html                # Simplex results
     │   ├── result_two_phase.html      # Two-phase results (Phase 1 + Phase 2)
@@ -63,10 +63,10 @@ OptiLineaire/
 | Component | Details |
 |-----------|---------|
 | **Backend** | Django 5.2.6 |
-| **Frontend** | Bootstrap 5.3.3, MathJax 3.2.2 SVG output (LaTeX rendering) — vendored under `static/pb_lineaire/vendor/`, works offline |
+| **Frontend** | Plain CSS (no framework), MathJax 3.2.2 SVG output (LaTeX rendering) — vendored under `static/pb_lineaire/vendor/`, works offline |
 | **Storage** | None: `DATABASES = {}`, no admin/auth/sessions, no migrations. Tests use `SimpleTestCase` |
 | **Math** | `fractions.Fraction` everywhere — exact rational arithmetic, zero floats |
-| **Styling** | CSS custom properties, light/dark theme, Swiss typographic style (Bricolage Grotesque / Archivo / Space Mono) |
+| **Styling** | CSS custom properties, light/dark theme, neutral palette with a single accent, Archivo (text) / Space Mono (numbers, tables) |
 
 ---
 

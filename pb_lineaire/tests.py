@@ -7,6 +7,7 @@ from .simplex import run_simplex, DetailBudget
 from .simplex_two_phase import run_two_phase
 from .gomory import run_gomory
 from .branch_bound import run_branch_and_bound
+from .templatetags.math_notation import math_formula
 
 
 # max 3x1 + 9x2  s.c.  x1 + 6x2 <= 15, 9x1 + 4x2 <= 19 — Gomory dépasse 15 coupes
@@ -433,6 +434,12 @@ class SolveViewTests(SimpleTestCase):
             self.assertTemplateUsed(response, "pb_lineaire/index.html")
             self.assertIn("Coefficient c1", response.context["error"])
             self.assertNotIn("Fraction", response.context["error"])
+            self.assertEqual(response.context["error_field"], "c_0")
+
+    def test_error_names_the_faulty_constraint_cell(self):
+        response = self._post({**self.BASE, "a_1_0": "x"})
+        self.assertEqual(response.context["error_field"], "a_1_0")
+        self.assertContains(response, 'data-error-field="a_1_0"')
 
     def test_size_limits_are_enforced(self):
         for key in ("n_vars", "n_constraints"):
@@ -506,3 +513,12 @@ class HealthTests(SimpleTestCase):
         response = self.client.get("/health")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, b"ok")
+
+
+class MathFormulaTests(SimpleTestCase):
+    def test_gomory_formula_becomes_inline_tex(self):
+        self.assertEqual(
+            math_formula("x2 − 1/8·y1 + 3/4·y2 ≥ 3/2"),
+            r"\(x_{2} - \frac{1}{8}\,y_{1} + \frac{3}{4}\,y_{2} \ge  \frac{3}{2}\)",
+        )
+        self.assertEqual(math_formula("δ ≤ 0"), r"\(\delta  \le  0\)")

@@ -1,65 +1,65 @@
 {% load math_notation %}
 {% if auto_reason %}
-<div class="auto-banner mb-4">
-  <span class="auto-banner__tag">Choix de méthode</span>
-  <span class="auto-banner__text">{{ auto_reason }}</span>
-</div>
+<p class="note auto-banner">
+  <span class="auto-banner__tag">Choix de méthode :</span>
+  <span>{{ auto_reason }}</span>
+</p>
 {% endif %}
 
 <!-- Rappel du problème -->
-<div class="card mb-4 shadow-sm">
-  <div class="card-header fw-bold">Problème saisi</div>
-  <div class="card-body">
-    <div class="math-line mb-1">\({{ objective_tex }}\)</div>
-    <p class="mb-1 mt-2"><strong>Sous contraintes :</strong></p>
-    <ul class="mb-0 list-unstyled">
+<section class="panel" aria-labelledby="problemTitle">
+  <div class="panel__head"><h2 id="problemTitle">Problème saisi</h2></div>
+  <div class="panel__body">
+    <div class="math-line">\({{ objective_tex }}\)</div>
+    <p><strong>Sous contraintes :</strong></p>
+    <ul class="constraint-list">
       {% for row in constraints_tex %}
-      <li class="math-line"><span class="text-muted">C{{ forloop.counter }} :</span> \({{ row }}\)</li>
+      <li class="math-line"><span class="muted">\(C_{ {{ forloop.counter }} }\) :</span> \({{ row }}\)</li>
       {% endfor %}
     </ul>
-    <p class="text-muted mt-2 mb-0">
+    <p class="muted">
       \(x_j \ge 0\) pour tout j{% if method == "gomory" or method == "bb" %},&nbsp; \(x_j \in \mathbb{Z}\) (variables entières){% endif %}
     </p>
   </div>
-</div>
+</section>
 
 {% if std_form %}
 <!-- Forme standard réellement résolue (celle des tableaux) -->
-<div class="card mb-4 shadow-sm">
-  <div class="card-header fw-bold">Forme standard résolue <span class="fw-normal text-muted">(max, contraintes ≤)</span></div>
-  <div class="card-body">
-    <p class="small text-muted mb-2">
+<details class="disclosure">
+  <summary>Forme standard résolue <span class="muted">(max, contraintes ≤)</span></summary>
+  <div class="disclosure__body">
+    <p class="small muted">
       Les tableaux ci-dessous portent sur ce problème équivalent :
       {% if std_form.minimize %}minimiser \(Z\) revient à maximiser \(Z' = -Z\) ; {% endif %}une contrainte \(\ge\) est multipliée par \(-1\) ; une contrainte \(=\) est scindée en deux inégalités.
     </p>
-    <div class="math-line mb-2">\({{ std_form.objective }}\)</div>
-    <div class="table-responsive">
-      <table class="simplex-table std-table">
-        <thead><tr><th>Contrainte</th><th>Origine</th><th>Écart</th></tr></thead>
+    <div class="math-line">\({{ std_form.objective }}\)</div>
+    <div class="table-scroll">
+      <table class="simplex-table simplex-table--compact">
+        <thead><tr><th scope="col" class="label-col">Contrainte</th><th scope="col">Origine</th><th scope="col">Écart</th></tr></thead>
         <tbody>
           {% for row in std_form.rows %}
           <tr>
-            <td class="text-start">\({{ row.tex }}\)</td>
-            <td>{{ row.origin }}</td>
-            <td>{{ row.slack|math_var }}</td>
+            <td class="label-col">\({{ row.tex }}\)</td>
+            <td class="text-start">{{ row.origin }}</td>
+            <td class="text-start">{{ row.slack|math_var }}</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
     {% if std_form.minimize %}
-    <p class="small text-muted mt-2 mb-0">
+    <p class="small muted">
       Les tableaux affichent \(Z'\) ; la valeur annoncée est reconvertie : \(Z^* = -Z'^*\).
     </p>
     {% endif %}
   </div>
-</div>
+</details>
 {% endif %}
 
 {% if omitted.steps or omitted.tableaux %}
-<div class="alert alert-light small mb-4">
-  <strong>Affichage allégé</strong> — problème volumineux :
+<p class="note small">
+  <strong>Affichage allégé</strong> (problème volumineux) :
   {% if omitted.steps %}détail du pivotage masqué pour {{ omitted.steps }} itération{{ omitted.steps|pluralize }}{% endif %}{% if omitted.steps and omitted.tableaux %} ; {% endif %}{% if omitted.tableaux %}{{ omitted.tableaux }} tableau{{ omitted.tableaux|pluralize:"x" }} non affiché{{ omitted.tableaux|pluralize }}{% endif %}.
   Le calcul, lui, est complet.
-</div>
+</p>
 {% endif %}

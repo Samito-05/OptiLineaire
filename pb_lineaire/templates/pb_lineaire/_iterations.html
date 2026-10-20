@@ -1,81 +1,79 @@
 {% load math_notation %}
-<div>
+<div class="stack">
+
+{% if toc %}
+<nav class="toc" aria-label="Aller à l'itération">
+  {% for it in result.iterations %}
+  <a href="#it-{{ iter_prefix|default:'' }}{{ it.number }}">{% if it.number == 0 %}Initial{% else %}It. {{ it.number }}{% endif %}{% if it.status == "optimal" %} ✓{% endif %}</a>
+  {% endfor %}
+</nav>
+{% endif %}
 
 {% for it in result.iterations %}
-<div class="card mb-4 shadow-sm iteration-card">
+<article class="iteration" id="it-{{ iter_prefix|default:'' }}{{ it.number }}">
 
-  <!-- En-tête de la carte -->
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <span class="fw-bold">
-      {% if it.number == 0 %}Tableau initial{% else %}Itération {{ it.number }}{% endif %}
-      {% if it.status == "optimal" %}
-        <span class="badge bg-success ms-2">Solution optimale</span>
-      {% elif it.status == "unbounded" %}
-        <span class="badge bg-danger ms-2">Non borné</span>
-      {% endif %}
-      {% if it.bland %}
-        <span class="badge bg-secondary ms-2">Règle de Bland (anti-cyclage)</span>
-      {% endif %}
-    </span>
-    {% if it.entering %}
-    <span class="small">
-      <span class="badge bg-primary">Entrante : {{ it.entering|math_var }}</span>
-      {% if it.leaving %}
-        <span class="badge bg-warning text-dark">Sortante : {{ it.leaving|math_var }}</span>
-        <span class="badge bg-danger">Pivot : {{ it.pivot_value }}</span>
-      {% endif %}
-    </span>
+  <!-- En-tête : numéro et statut ; le choix du pivot est dit une seule fois, dans le résumé -->
+  <div class="iteration__head">
+    <h3>{% if it.number == 0 %}Tableau initial{% else %}Itération {{ it.number }}{% endif %}</h3>
+    {% if it.status == "optimal" %}
+      <span class="chip chip--strong">✓ Solution optimale</span>
+    {% elif it.status == "unbounded" %}
+      <span class="chip chip--accent">∞ Non borné</span>
+    {% endif %}
+    {% if it.bland %}
+      <span class="chip">Règle de Bland (anti-cyclage)</span>
     {% endif %}
   </div>
 
-  <div class="card-body p-3">
+  <div class="iteration__body">
 
     {% if it.caption %}
-    <div class="text-muted small mb-3">{{ it.caption }}</div>
+    <p class="small muted">{{ it.caption }}</p>
     {% endif %}
 
     <!-- Résumé du choix de pivot -->
     {% if it.entering and it.leaving %}
-    <div class="alert alert-light border py-2 px-3 mb-3 small">
-      <strong>Variable entrante :</strong> {{ it.entering|math_var }}
-        <span class="text-muted">({% if it.forced %}forcée en base{% elif it.bland %}sommet dégénéré : premier coefficient LF positif{% else %}coefficient LF le plus positif{% endif %})</span>
-      &nbsp;|&nbsp;
-      <strong>Variable sortante :</strong> {{ it.leaving|math_var }}
-        <span class="text-muted">({% if it.forced %}RHS le plus négatif{% elif it.bland %}ratio minimum ; à égalité, plus petit indice{% else %}ratio minimum{% endif %})</span>
-      &nbsp;|&nbsp;
-      <strong>Élément pivot :</strong>
-        <span class="badge bg-danger">{{ it.pivot_value }}</span>
-        <span class="text-muted">(ligne {{ it.leaving|math_var }}, colonne {{ it.entering|math_var }})</span>
-    </div>
+    <p class="pivot-summary">
+      <span><span class="mark" aria-hidden="true">▼</span> <strong>Entrante :</strong> {{ it.entering|math_var }}
+        <span class="why explain">({% if it.forced %}forcée en base{% elif it.bland %}sommet dégénéré : premier coefficient LF positif{% else %}coefficient LF le plus positif{% endif %})</span></span>
+      <span><span class="mark" aria-hidden="true">◀</span> <strong>Sortante :</strong> {{ it.leaving|math_var }}
+        <span class="why explain">({% if it.forced %}RHS le plus négatif{% elif it.bland %}ratio minimum ; à égalité, plus petit indice{% else %}ratio minimum{% endif %})</span></span>
+      <span><strong>Pivot :</strong> <span class="num">{{ it.pivot_value }}</span>
+        <span class="why explain">(ligne {{ it.leaving|math_var }}, colonne {{ it.entering|math_var }})</span></span>
+    </p>
     {% endif %}
 
     <!-- Tableau du simplexe -->
-    <div class="table-responsive mb-3">
+    <div class="table-scroll">
       <table class="simplex-table">
         <thead>
           <tr>
-            <th class="label-col">Base</th>
+            <th scope="col" class="label-col">Base</th>
             {% for col in it.col_headers %}
-              <th {% if col == it.entering %}class="col-entering"{% endif %}>{{ col|math_var }}</th>
+              {% if col == it.entering %}
+              <th scope="col" class="col-entering">{{ col|math_var }}<span class="mark" aria-hidden="true">▼</span><span class="visually-hidden"> (entrante)</span></th>
+              {% else %}
+              <th scope="col">{{ col|math_var }}</th>
+              {% endif %}
             {% endfor %}
-            <th>b</th>
-            {% if it.entering and not it.forced %}<th class="ratio-col">Ratio</th>{% endif %}
+            <th scope="col">\(b\)</th>
+            {% if it.entering and not it.forced %}<th scope="col" class="ratio-col">Ratio</th>{% endif %}
           </tr>
         </thead>
         <tbody>
           {% for row in it.rows %}
           <tr class="{% if row.is_lf %}row-lf{% elif row.is_leaving %}row-leaving{% endif %}">
-            <td class="label-col">{{ row.label|math_var }}</td>
+            <th scope="row" class="label-col">{{ row.label|math_var }}{% if row.is_leaving %}<span class="mark" aria-hidden="true">◀</span><span class="visually-hidden"> (sortante)</span>{% endif %}</th>
             {% for cell in row.cells %}
-              <td class="{% if cell.type == 'pivot' %}cell-pivot{% elif cell.type == 'entering' %}col-entering{% elif cell.type == 'leaving' %}row-leaving{% endif %}">
-                {% if cell.type == "pivot" %}<strong>{{ cell.value }}</strong>{% else %}{{ cell.value }}{% endif %}
-              </td>
+              {% if cell.type == "pivot" %}
+              <td class="cell-pivot">{{ cell.value }}<span class="visually-hidden"> (pivot)</span></td>
+              {% else %}
+              <td{% if cell.type == "entering" %} class="col-entering"{% elif cell.type == "leaving" %} class="row-leaving"{% endif %}>{{ cell.value }}</td>
+              {% endif %}
             {% endfor %}
-            <td {% if row.is_leaving %}class="row-leaving"{% endif %}>{{ row.rhs.value }}</td>
+            <td{% if row.is_leaving %} class="row-leaving"{% endif %}>{{ row.rhs.value }}</td>
             {% if it.entering and not it.forced %}
-            <td class="ratio-col">
-              {% if not row.is_lf %}{{ row.ratio }}{% if row.is_leaving %} <strong>← min</strong>{% endif %}{% endif %}
-            </td>
+            <td class="ratio-col">{% if not row.is_lf %}{{ row.ratio }}{% if row.is_leaving %} <strong>← min</strong>{% endif %}{% endif %}</td>
             {% endif %}
           </tr>
           {% endfor %}
@@ -85,63 +83,43 @@
 
     <!-- Étapes détaillées du pivotage -->
     {% if it.pivot_steps %}
-      <div class="border rounded p-3 bg-light">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-          <div>
-            <div class="fw-bold small text-uppercase text-secondary">{{ it.steps_title|default:"Comment on fait le pivot" }}</div>
-            <div class="text-muted small">{% if it.steps_desc %}{{ it.steps_desc }}{% else %}1) On rend la ligne pivot égale à 1, <br> 2) On enlève la variable entrante des autres lignes.{% endif %}</div>
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-sm btn-outline-secondary collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#pivotSteps-{{ iter_prefix|default:'' }}{{ it.number }}" aria-expanded="false" aria-controls="pivotSteps-{{ iter_prefix|default:'' }}{{ it.number }}">
-              Détails <span class="collapse-icon ms-2">▾</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="collapse" id="pivotSteps-{{ iter_prefix|default:'' }}{{ it.number }}" style="overflow-x: auto;">
-          {% if it.entering %}<div class="small text-muted mb-2">Pivot {{ it.pivot_value }} · colonne {{ it.entering|math_var  }} · ligne {{ it.leaving|math_var  }}</div>{% endif %}
-          <div class="d-grid gap-2">
-            {% for step in it.pivot_steps %}
-            <div class="pivot-step-card border rounded p-2">
-              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-                <div class="fw-semibold small">
-                  {% if step.kind == "normalize" %}
-                    <span class="badge bg-warning text-dark me-2">Normalisation</span>
-                  {% else %}
-                    <span class="badge bg-info text-dark me-2">Élimination</span>
-                  {% endif %}
-                  {{ step.operation|math_text }}
-                </div>
-                <div class="text-muted small formula-text">{{ step.formula|math_text }}</div>
-              </div>
-              <div class="table-responsive">
-                <table class="simplex-table pivot-step-table">
-                  <thead>
-                    <tr>
-                      <th class="label-col pivot-step-label-col">Ligne</th>
-                      {% for col in it.col_headers %}<th>{{ col|math_var }}</th>{% endfor %}
-                      <th>b</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td class="label-col">{{ step.row_label|math_var }}</td>
-                      {% for val in step.new_row %}
-                        <td>{{ val }}</td>
-                      {% endfor %}
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            {% endfor %}
+    <details class="disclosure explain" id="pivotSteps-{{ iter_prefix|default:'' }}{{ it.number }}">
+      <summary>{{ it.steps_title|default:"Comment on fait le pivot" }}</summary>
+      <div class="disclosure__body">
+        <p class="small muted">{% if it.steps_desc %}{{ it.steps_desc }}{% else %}1) On rend la ligne pivot égale à 1 ; 2) on enlève la variable entrante des autres lignes.{% endif %}</p>
+        {% if it.entering %}<p class="small">Pivot <span class="num">{{ it.pivot_value }}</span> · colonne {{ it.entering|math_var }} · ligne {{ it.leaving|math_var }}</p>{% endif %}
+        {% for step in it.pivot_steps %}
+        <div class="pivot-step">
+          <p class="cluster small">
+            <span class="chip">{% if step.kind == "normalize" %}Normalisation{% else %}Élimination{% endif %}</span>
+            <strong>{{ step.operation|math_text }}</strong>
+            <span class="muted num">{{ step.formula|math_text }}</span>
+          </p>
+          <div class="table-scroll">
+            <table class="simplex-table simplex-table--compact">
+              <thead>
+                <tr>
+                  <th scope="col" class="label-col">Ligne</th>
+                  {% for col in it.col_headers %}<th scope="col">{{ col|math_var }}</th>{% endfor %}
+                  <th scope="col">\(b\)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row" class="label-col">{{ step.row_label|math_var }}</th>
+                  {% for val in step.new_row %}<td>{{ val }}</td>{% endfor %}
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
+        {% endfor %}
       </div>
+    </details>
     {% endif %}
 
   </div>
-</div>
+</article>
 {% endfor %}
 
 </div>

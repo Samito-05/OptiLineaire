@@ -2,7 +2,7 @@
 <li>
   <div class="bb-node bb-node--{{ node.status|default:'unexplored' }}{% if node.id == result.incumbent_node %} bb-node--best{% endif %}">
     <div class="bb-node__head">
-      <span class="bb-node__id">N{{ node.id }}</span>
+      {% if node.status %}<a class="bb-node__id" href="#node-{{ node.id }}">N{{ node.id }}</a>{% else %}<span class="bb-node__id">N{{ node.id }}</span>{% endif %}
       {% if node.branch_label %}<span class="bb-node__branch">{{ node.branch_label|math_text }}</span>{% endif %}
     </div>
     {% if node.bound_display %}
@@ -10,7 +10,7 @@
     {% endif %}
     <div class="bb-node__status">
       {% if node.status == "branched" %}branché sur {{ node.frac_var|math_var }} = {{ node.frac_value }}
-      {% elif node.status == "integer" %}entière{% if node.id == result.incumbent_node %} ★ optimum{% endif %}
+      {% elif node.status == "integer" %}entière{% if node.id == result.incumbent_node %}, optimum{% endif %}
       {% elif node.status == "pruned" %}élagué (borne)
       {% elif node.status == "infeasible" %}infaisable
       {% elif node.status == "unbounded" %}non borné

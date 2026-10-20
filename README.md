@@ -34,8 +34,8 @@ Tout le calcul est effectué en **arithmétique rationnelle exacte** (`fractions
 | 🎲 Remplissage aléatoire | Génère un exemple instantanément pour tester |
 | 🔍 Visualisation pas-à-pas | Itérations avec pivot mis en évidence, opérations ligne par ligne, étapes de coupe numérotées, arbre B&B |
 | ⚠️ Cas particuliers | Détection : non borné, infaisable ; anti-cyclage (règle de Bland sur sommet dégénéré) ; bascule automatique Gomory → Branch-and-Bound |
-| 📴 Hors ligne | Bootstrap, MathJax et polices servis localement — aucun CDN |
-| 📱 Interface responsive | Design Bootstrap, compatible mobile |
+| 📴 Hors ligne | MathJax et polices servis localement — aucun CDN |
+| 📱 Interface responsive | CSS sans framework, compatible mobile, mode projection pour les TD |
 | 🌓 Mode clair/sombre | Thème commutable côté client |
 
 ---
@@ -240,7 +240,7 @@ OptiLineaire/
     │
     └── static/pb_lineaire/
         ├── global.css               # Styles (variables CSS, mode clair/sombre)
-        └── vendor/                  # Bootstrap 5.3.3, MathJax 3.2.2 (SVG), polices — servis localement
+        └── vendor/                  # MathJax 3.2.2 (SVG), polices — servis localement
 ```
 
 ---
@@ -256,8 +256,8 @@ OptiLineaire/
 > Aucune autre dépendance — tout le calcul (Simplexe, deux phases,
 > Gomory, Branch-and-Bound) est implémenté en pur Python avec le module standard `fractions`.
 >
-> Côté navigateur, `static/pb_lineaire/vendor/` embarque Bootstrap 5.3.3 (MIT),
-> MathJax 3.2.2 (Apache 2.0) et les polices Bricolage Grotesque, Archivo et Space Mono (SIL OFL) :
+> Côté navigateur, `static/pb_lineaire/vendor/` embarque
+> MathJax 3.2.2 (Apache 2.0) et les polices Archivo et Space Mono (SIL OFL) :
 > l'application fonctionne sans connexion Internet.
 
 ---

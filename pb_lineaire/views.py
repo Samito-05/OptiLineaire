@@ -25,12 +25,20 @@ _OP_TEX = {"le": r"\le", "ge": r"\ge", "eq": "="}
 
 
 class InputError(ValueError):
-    """Saisie invalide : le message est affiché tel quel à l'utilisateur."""
+    """Saisie invalide : le message est affiché tel quel à l'utilisateur.
+
+    `field` nomme le champ fautif du formulaire, pour le signaler sur la bonne case.
+    """
+
+    def __init__(self, message, field=None):
+        super().__init__(message)
+        self.field = field
 
 
-def index(request, error=None):
+def index(request, error=None, error_field=None):
     return render(request, "pb_lineaire/index.html", {
         "error": error,
+        "error_field": error_field,
         "var_choices": range(1, MAX_VARS + 1),
         "constraint_choices": range(1, MAX_CONSTRAINTS + 1),
     })
@@ -43,7 +51,7 @@ def solve(request):
     try:
         problem = _parse_problem(request.POST)
     except InputError as e:
-        return index(request, error=str(e))
+        return index(request, error=str(e), error_field=e.field)
 
     try:
         return _solve(request, problem)
@@ -63,9 +71,9 @@ def _parse_count(post, key, label, maximum):
     try:
         value = int(raw)
     except ValueError:
-        raise InputError(f"{label} : « {raw} » n'est pas un entier.")
+        raise InputError(f"{label} : « {raw} » n'est pas un entier.", key)
     if not 1 <= value <= maximum:
-        raise InputError(f"{label} : {value} est hors limites (de 1 à {maximum}).")
+        raise InputError(f"{label} : {value} est hors limites (de 1 à {maximum}).", key)
     return value
 
 
@@ -77,12 +85,13 @@ def _parse_number(post, key, label):
     if not _NUMBER.fullmatch(text):
         raise InputError(
             f"{label} : « {raw.strip()} » n'est pas un nombre valide "
-            "(exemples : 3, -2.5, 1/3)."
+            "(exemples : 3, -2.5, 1/3).",
+            key,
         )
     try:
         return Fraction(text)
     except ZeroDivisionError:
-        raise InputError(f"{label} : division par zéro dans « {raw.strip()} ».")
+        raise InputError(f"{label} : division par zéro dans « {raw.strip()} ».", key)
 
 
 def _parse_problem(post):

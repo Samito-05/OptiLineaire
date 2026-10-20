@@ -52,3 +52,5 @@ Desktop.ini
 *.log
 *.tmp
 *.temp
+# Impeccable (archives de critique design)
+.impeccable/
